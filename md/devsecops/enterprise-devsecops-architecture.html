@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise DevSecOps Architecture — Edition I</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0C0E12;
+    --bg-deeper: #07090C;
+    --surface: #14171D;
+    --surface-2: #1C2028;
+    --surface-3: #252932;
+    --ink: #ECE8DE;
+    --ink-dim: #A29C8C;
+    --ink-faint: #5A554A;
+    --ink-ghost: #3A3831;
+    --rule: #2A2C33;
+    --rule-soft: #1F2128;
+    --brass: #C9A961;
+    --brass-deep: #9B7F3E;
+    --brass-glow: rgba(201, 169, 97, 0.12);
+    --copper: #C5734A;
+    --steel: #6B8AB5;
+    --ember: #D94E3B;
+    --verdigris: #4A8C7F;
+    --violet: #8B6FB5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    font-feature-settings: 'ss01', 'ss02', 'cv05';
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(201, 169, 97, 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(107, 138, 181, 0.03) 0%, transparent 50%);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    z-index: 1000;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+  }
+
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 64px;
+    position: relative;
+  }
+
+  /* ============ MASTHEAD ============ */
+  .masthead {
+    padding: 56px 0 48px;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+
+  .mast-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 72px;
+  }
+
+  .mast-top .left { display: flex; gap: 32px; }
+  .mast-top .brass-dot::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--brass);
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+    box-shadow: 0 0 12px var(--brass);
+  }
+
+  .mast-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(56px, 9vw, 128px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    font-variation-settings: "SOFT" 30, "opsz" 144;
+    margin-bottom: 32px;
+    color: var(--ink);
+  }
+
+  .mast-title .em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--brass);
+    font-variation-settings: "SOFT" 100, "opsz" 144;
+  }
+
+  .mast-title .thin {
+    font-weight: 200;
+    color: var(--ink-dim);
+  }
+
+  .mast-sub {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .mast-kicker {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.4;
+    max-width: 520px;
+  }
+
+  .mast-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    line-height: 1.9;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    align-self: end;
+  }
+
+  .mast-meta .row { display: flex; gap: 16px; }
+  .mast-meta .label { color: var(--ink-faint); width: 100px; }
+  .mast-meta .val { color: var(--ink); }
+
+  /* ============ SECTION FRAME ============ */
+  section {
+    padding: 96px 0 64px;
+    position: relative;
+  }
+
+  .sec-head {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 32px;
+    margin-bottom: 56px;
+    align-items: start;
+  }
+
+  .sec-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--brass);
+    padding-top: 14px;
+    border-top: 2px solid var(--brass);
+    display: block;
+  }
+
+  .sec-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variation-settings: "SOFT" 40, "opsz" 144;
+    color: var(--ink);
+  }
+
+  .sec-title .emph {
+    font-style: italic;
+    color: var(--brass);
+    font-weight: 400;
+  }
+
+  .sec-lede {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    line-height: 1.45;
+    font-weight: 300;
+    color: var(--ink-dim);
+    margin-top: 24px;
+    max-width: 780px;
+  }
+
+  /* ============ PRINCIPLES GRID ============ */
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .principle {
+    background: var(--bg);
+    padding: 40px 32px;
+    position: relative;
+    transition: background 0.4s ease;
+  }
+
+  .principle:hover {
+    background: var(--surface);
+  }
+
+  .principle-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--brass);
+    margin-bottom: 24px;
+  }
+
+  .principle-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-bottom: 16px;
+    color: var(--ink);
+    min-height: 52px;
+  }
+
+  .principle-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+  }
+
+  /* ============ TOPOLOGY DIAGRAM ============ */
+  .topology {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 48px;
+    margin-top: 32px;
+  }
+
+  .topo-frame {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 48px;
+  }
+
+  .topo-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .topo-layer {
+    border-left: 2px solid var(--rule);
+    padding: 24px 24px 24px 32px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .topo-layer.active {
+    border-left-color: var(--brass);
+    background: linear-gradient(90deg, var(--brass-glow) 0%, transparent 60%);
+  }
+
+  .topo-layer::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 32px;
+    width: 12px;
+    height: 12px;
+    background: var(--bg);
+    border: 2px solid var(--rule);
+    border-radius: 50%;
+  }
+
+  .topo-layer.active::before {
+    background: var(--brass);
+    border-color: var(--brass);
+    box-shadow: 0 0 16px var(--brass);
+  }
+
+  .topo-layer-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 6px;
+  }
+
+  .topo-layer-name {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  .topo-layer-owner {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--brass);
+    margin-top: 4px;
+  }
+
+  .topo-content {
+    padding: 12px 0;
+  }
+
+  .topo-content h4 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .topo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  .chip {
+    font-size: 12px;
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    color: var(--ink-dim);
+    background: var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.02em;
+    border-radius: 2px;
+  }
+
+  .chip.accent {
+    border-color: var(--brass-deep);
+    color: var(--brass);
+    background: var(--brass-glow);
+  }
+
+  /* ============ ORG CONSTELLATION ============ */
+  .orgmap {
+    margin-top: 32px;
+    position: relative;
+  }
+
+  .orgmap svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ============ FEDERATION FLOW ============ */
+  .fedflow {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 56px 48px;
+    margin-top: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fedflow::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--brass) 50%, transparent 100%);
+  }
+
+  .fedflow-stages {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    position: relative;
+  }
+
+  .fedflow-stages::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ember) 0%, var(--brass) 33%, var(--steel) 66%, var(--verdigris) 100%);
+    opacity: 0.3;
+    z-index: 0;
+  }
+
+  .fstage {
+    position: relative;
+    z-index: 1;
+  }
+
+  .fstage-node {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--rule);
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brass);
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .fstage-node.ember { border-color: var(--ember); color: var(--ember); }
+  .fstage-node.brass { border-color: var(--brass); color: var(--brass); }
+  .fstage-node.steel { border-color: var(--steel); color: var(--steel); }
+  .fstage-node.verdigris { border-color: var(--verdigris); color: var(--verdigris); }
+
+  .fstage-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 8px;
+  }
+
+  .fstage-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.25;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  .fstage-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+  }
+
+  /* ============ DEVEX STACK ============ */
+  .devex {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .devex-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+
+  .devex-layer {
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 20px;
+    align-items: center;
+    position: relative;
+    transition: background 0.3s ease;
+  }
+
+  .devex-layer:last-child { border-bottom: none; }
+
+  .devex-layer:hover {
+    background: var(--surface-2);
+  }
+
+  .devex-idx {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--brass);
+    letter-spacing: 0.12em;
+  }
+
+  .devex-main .name {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .devex-main .desc {
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-top: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+
+  .devex-icon {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+
+  .devex-explainer {
+    padding: 8px 4px;
+  }
+
+  .devex-explainer h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+
+  .devex-explainer h3 em {
+    font-style: italic;
+    color: var(--brass);
+  }
+
+  .devex-explainer p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--ink-dim);
+    margin-bottom: 16px;
+  }
+
+  .devex-explainer .pullquote {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-style: italic;
+    line-height: 1.45;
+    color: var(--ink);
+    padding: 24px 0 24px 24px;
+    border-left: 2px solid var(--brass);
+    margin: 24px 0;
+  }
+
+  /* ============ ROLLOUT ============ */
+  .rollout {
+    margin-top: 32px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .rollout-stage {
+    display: grid;
+    grid-template-columns: 140px 1fr 1fr;
+    gap: 48px;
+    padding: 36px 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: start;
+  }
+
+  .rollout-marker {
+    position: relative;
+  }
+
+  .rollout-marker .num {
+    font-family: 'Fraunces', serif;
+    font-size: 64px;
+    font-weight: 200;
+    line-height: 0.9;
+    color: var(--brass);
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+  }
+
+  .rollout-marker .lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 8px;
+  }
+
+  .rollout-title {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  .rollout-title em {
+    font-style: italic;
+    color: var(--brass);
+  }
+
+  .rollout-body {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink-dim);
+  }
+
+  .rollout-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .rollout-controls .ctrl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink);
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--brass);
+    letter-spacing: 0.04em;
+  }
+
+  .rollout-controls .ctrl.foundation { border-left-color: var(--ember); }
+  .rollout-controls .ctrl.baseline { border-left-color: var(--copper); }
+  .rollout-controls .ctrl.provenance { border-left-color: var(--brass); }
+  .rollout-controls .ctrl.differentiated { border-left-color: var(--steel); }
+  .rollout-controls .ctrl.continuous { border-left-color: var(--verdigris); }
+
+  /* ============ FRAMEWORKS ============ */
+  .frameworks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-top: 32px;
+  }
+
+  .framework {
+    background: var(--bg);
+    padding: 36px 28px;
+    position: relative;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .framework-mark {
+    font-family: 'Fraunces', serif;
+    font-size: 48px;
+    font-weight: 200;
+    line-height: 1;
+    color: var(--brass);
+    margin-bottom: 16px;
+    font-variation-settings: "opsz" 144, "SOFT" 80;
+    font-style: italic;
+  }
+
+  .framework-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .framework-full {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+
+  .framework-use {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+    margin-top: auto;
+  }
+
+  /* ============ RESPONSIBILITY MATRIX ============ */
+  .matrix {
+    margin-top: 32px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .matrix table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .matrix th {
+    padding: 18px 20px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    font-weight: 500;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .matrix td {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14px;
+    color: var(--ink);
+    vertical-align: top;
+  }
+
+  .matrix tr:last-child td { border-bottom: none; }
+
+  .matrix td.scope {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--ink);
+    width: 28%;
+  }
+
+  .matrix td.scope .sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  .matrix td.actor {
+    font-size: 13px;
+    color: var(--ink-dim);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .matrix td.actor .pri {
+    color: var(--brass);
+    font-weight: 500;
+  }
+
+  .matrix td.actor .trans {
+    color: var(--copper);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    display: block;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ============ COE CORE ============ */
+  .coe {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+    margin-top: 32px;
+    padding: 56px;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+    border: 1px solid var(--rule);
+    position: relative;
+  }
+
+  .coe::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    bottom: 24px;
+    width: 1px;
+    background: var(--brass);
+    opacity: 0.3;
+    display: none;
+  }
+
+  .coe-quote {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 32px;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variation-settings: "SOFT" 50, "opsz" 144;
+  }
+
+  .coe-quote em {
+    font-style: italic;
+    color: var(--brass);
+  }
+
+  .coe-quote::before {
+    content: '"';
+    font-size: 72px;
+    line-height: 0.3;
+    vertical-align: -0.35em;
+    color: var(--brass);
+    margin-right: 8px;
+    font-style: italic;
+  }
+
+  .coe-outputs {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .coe-output {
+    padding: 16px 20px;
+    background: var(--bg);
+    border-left: 2px solid var(--brass);
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .coe-output .idx {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--brass);
+  }
+
+  .coe-output .txt {
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .coe-output .txt em {
+    color: var(--ink-dim);
+    font-style: normal;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    margin-left: 8px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ============ COLOPHON ============ */
+  .colophon {
+    margin-top: 96px;
+    padding: 48px 0 64px;
+    border-top: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 48px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    letter-spacing: 0.04em;
+    line-height: 1.8;
+  }
+
+  .colophon h5 {
+    color: var(--brass);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .colophon p {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+    font-style: italic;
+    letter-spacing: 0;
+  }
+
+  .colophon .sig {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-style: italic;
+    color: var(--brass);
+    font-weight: 300;
+    margin-top: 8px;
+  }
+
+  /* ============ ANIMATION ============ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .mast-title { animation: fadeUp 1s ease-out; }
+  .mast-kicker { animation: fadeUp 1s ease-out 0.2s both; }
+  .mast-meta { animation: fadeUp 1s ease-out 0.4s both; }
+
+  section { animation: fadeUp 0.8s ease-out both; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .page { padding: 0 24px; }
+    .principles { grid-template-columns: 1fr 1fr; }
+    .frameworks { grid-template-columns: 1fr; }
+    .devex { grid-template-columns: 1fr; }
+    .fedflow-stages { grid-template-columns: 1fr; }
+    .coe { grid-template-columns: 1fr; padding: 32px; }
+    .rollout-stage { grid-template-columns: 100px 1fr; }
+    .rollout-controls { grid-column: 1 / -1; margin-top: 16px; }
+    .topo-frame { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ============ MASTHEAD ============ -->
+  <header class="masthead">
+    <div class="mast-top">
+      <div class="left">
+        <span class="brass-dot">Enterprise Technology Services</span>
+        <span>DevSecOps Center of Excellence</span>
+      </div>
+      <div>Edition I — Draft for Review</div>
+    </div>
+
+    <h1 class="mast-title">
+      A federated<br>
+      <span class="em">architecture</span> for<br>
+      <span class="thin">multi-org DevSecOps.</span>
+    </h1>
+
+    <div class="mast-sub">
+      <div class="mast-kicker">
+        A working map of how policy, platform, and practice move across an enterprise — from the security office, through the managed-services layer, into the hands of every developer.
+      </div>
+      <div class="mast-meta">
+        <div class="row"><span class="label">Document</span><span class="val">DSOA-001</span></div>
+        <div class="row"><span class="label">Revision</span><span class="val">Draft v1 · 2026</span></div>
+        <div class="row"><span class="label">Owner</span><span class="val">DevSecOps COE</span></div>
+        <div class="row"><span class="label">Scope</span><span class="val">Enterprise-wide</span></div>
+        <div class="row"><span class="label">Standards</span><span class="val">NIST · CJIS · CIS · OWASP</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ PRINCIPLES ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 01 / Principles</div>
+      <div>
+        <h2 class="sec-title">Four <span class="emph">commitments</span> that shape every decision.</h2>
+        <p class="sec-lede">Before any tool is chosen, these commitments decide what good looks like. They are the reason we build templates instead of mandates, measure instead of gate, and move in small stages instead of large leaps.</p>
+      </div>
+    </div>
+
+    <div class="principles">
+      <div class="principle">
+        <div class="principle-num">I.</div>
+        <h3 class="principle-title">Platform<br>not team.</h3>
+        <p class="principle-body">Everything we adopt must be consumable by orgs that don't report to us. Every pattern has a shareable form — a template, a reusable workflow, a documented standard.</p>
+      </div>
+      <div class="principle">
+        <div class="principle-num">II.</div>
+        <h3 class="principle-title">Small steps,<br>staged rollout.</h3>
+        <p class="principle-body">New territory for most participants. We pilot in low-risk repos, measure, then expand. The COE agenda moves one or two artifacts forward per sprint — no big-bang.</p>
+      </div>
+      <div class="principle">
+        <div class="principle-num">III.</div>
+        <h3 class="principle-title">The right thing,<br>made easy.</h3>
+        <p class="principle-body">Resistance to standards is usually resistance to friction. Templates, workflows, and instruction files exist to reduce effort — not to enforce through pain.</p>
+      </div>
+      <div class="principle">
+        <div class="principle-num">IV.</div>
+        <h3 class="principle-title">Visibility over<br>gatekeeping.</h3>
+        <p class="principle-body">Zero Trust means continuous verification, not continuous blocking. Measurable posture, attestation, evidence — these compound. Manual approval gates do not.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TOPOLOGY ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 02 / Topology</div>
+      <div>
+        <h2 class="sec-title">Three layers, <span class="emph">one policy spine.</span></h2>
+        <p class="sec-lede">GitHub Enterprise configuration lives at three distinct altitudes. Placing a control at the wrong altitude creates sprawl or inflexibility. The layer model is the foundation for every policy, ruleset, and workflow that follows.</p>
+      </div>
+    </div>
+
+    <div class="topology">
+      <div class="topo-frame">
+        <div class="topo-layers">
+          <div class="topo-layer active">
+            <div class="topo-layer-label">Altitude 01</div>
+            <div class="topo-layer-name">Enterprise</div>
+            <div class="topo-layer-owner">→ Enterprise Security</div>
+          </div>
+          <div class="topo-layer active">
+            <div class="topo-layer-label">Altitude 02</div>
+            <div class="topo-layer-name">Organization</div>
+            <div class="topo-layer-owner">→ Each org (ours, Sec, Dev)</div>
+          </div>
+          <div class="topo-layer active">
+            <div class="topo-layer-label">Altitude 03</div>
+            <div class="topo-layer-name">Repository</div>
+            <div class="topo-layer-owner">→ Repo owner + CODEOWNERS</div>
+          </div>
+        </div>
+        <div class="topo-content">
+          <h4>Configured at Enterprise</h4>
+          <div class="topo-chips">
+            <span class="chip accent">SSO · SCIM</span>
+            <span class="chip accent">Audit log streaming</span>
+            <span class="chip accent">IP allow lists</span>
+            <span class="chip accent">Copilot content exclusions</span>
+            <span class="chip accent">Secret scanning defaults</span>
+            <span class="chip accent">Push protection</span>
+            <span class="chip accent">Required rulesets</span>
+            <span class="chip accent">Custom properties</span>
+          </div>
+
+          <h4>Configured at Org</h4>
+          <div class="topo-chips">
+            <span class="chip">Actions permissions</span>
+            <span class="chip">Reusable workflows (recommended)</span>
+            <span class="chip">Starter workflows</span>
+            <span class="chip">Repo templates</span>
+            <span class="chip">Copilot knowledge bases</span>
+            <span class="chip">Org-scoped rulesets</span>
+          </div>
+
+          <h4>Configured at Repo</h4>
+          <div class="topo-chips">
+            <span class="chip">Branch protection beyond baseline</span>
+            <span class="chip">CODEOWNERS</span>
+            <span class="chip">copilot-instructions.md</span>
+            <span class="chip">.vscode / mcp.json</span>
+            <span class="chip">Environment protections</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ORG CONSTELLATION ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 03 / Constellation</div>
+      <div>
+        <h2 class="sec-title">The <span class="emph">org map</span>, plainly.</h2>
+        <p class="sec-lede">Four kinds of org, one coordinating body. Where today's ownership is crossed with our managed-services role, the map shows the intended direction — not the interim state.</p>
+      </div>
+    </div>
+
+    <div class="orgmap">
+      <svg viewBox="0 0 1200 680" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="brassGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#C9A961" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#9B7F3E" stop-opacity="0.05"/>
+          </linearGradient>
+          <linearGradient id="steelGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6B8AB5" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#3D5880" stop-opacity="0.04"/>
+          </linearGradient>
+          <linearGradient id="emberGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#D94E3B" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#8A2F22" stop-opacity="0.04"/>
+          </linearGradient>
+          <linearGradient id="verdGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4A8C7F" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#2A5C52" stop-opacity="0.04"/>
+          </linearGradient>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#5A554A"/>
+          </marker>
+          <marker id="arrowBrass" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#C9A961"/>
+          </marker>
+        </defs>
+
+        <!-- Dotted grid hint -->
+        <g opacity="0.06">
+          <line x1="0" y1="170" x2="1200" y2="170" stroke="#ECE8DE" stroke-width="1"/>
+          <line x1="0" y1="340" x2="1200" y2="340" stroke="#ECE8DE" stroke-width="1"/>
+          <line x1="0" y1="510" x2="1200" y2="510" stroke="#ECE8DE" stroke-width="1"/>
+          <line x1="400" y1="0" x2="400" y2="680" stroke="#ECE8DE" stroke-width="1"/>
+          <line x1="800" y1="0" x2="800" y2="680" stroke="#ECE8DE" stroke-width="1"/>
+        </g>
+
+        <!-- Enterprise Security (top) -->
+        <g>
+          <rect x="440" y="40" width="320" height="140" fill="url(#emberGlow)" stroke="#D94E3B" stroke-width="1"/>
+          <text x="460" y="70" fill="#D94E3B" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8">POLICY · GOVERNANCE</text>
+          <text x="460" y="108" fill="#ECE8DE" font-family="Fraunces" font-size="26" font-weight="400">Enterprise</text>
+          <text x="460" y="138" fill="#ECE8DE" font-family="Fraunces" font-size="26" font-weight="400" font-style="italic">Security</text>
+          <text x="460" y="162" fill="#A29C8C" font-family="IBM Plex Mono" font-size="10">Required rulesets · Scanning · Logging</text>
+        </g>
+
+        <!-- DevSecOps COE (center) -->
+        <g>
+          <circle cx="600" cy="340" r="88" fill="url(#brassGlow)" stroke="#C9A961" stroke-width="1.5"/>
+          <circle cx="600" cy="340" r="88" fill="none" stroke="#C9A961" stroke-width="0.5" stroke-dasharray="3 4" opacity="0.5"/>
+          <text x="600" y="325" fill="#C9A961" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8" text-anchor="middle">CENTER OF EXCELLENCE</text>
+          <text x="600" y="352" fill="#ECE8DE" font-family="Fraunces" font-size="22" font-weight="400" text-anchor="middle">DevSecOps</text>
+          <text x="600" y="376" fill="#ECE8DE" font-family="Fraunces" font-size="22" font-weight="400" font-style="italic" text-anchor="middle">COE</text>
+        </g>
+
+        <!-- Managed Services (left) -->
+        <g>
+          <rect x="60" y="270" width="280" height="140" fill="url(#brassGlow)" stroke="#C9A961" stroke-width="1"/>
+          <text x="80" y="300" fill="#C9A961" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8">BUILD · RUN · DELIVER</text>
+          <text x="80" y="338" fill="#ECE8DE" font-family="Fraunces" font-size="24" font-weight="400">Enterprise</text>
+          <text x="80" y="365" fill="#ECE8DE" font-family="Fraunces" font-size="24" font-weight="400" font-style="italic">Managed Services</text>
+          <text x="80" y="390" fill="#A29C8C" font-family="IBM Plex Mono" font-size="10">Data · Cloud · Backup · Platform</text>
+          <text x="80" y="404" fill="#C5734A" font-family="IBM Plex Mono" font-size="9">[interim: GitHub tenancy admin]</text>
+        </g>
+
+        <!-- Enterprise Development (right) -->
+        <g>
+          <rect x="860" y="270" width="280" height="140" fill="url(#steelGlow)" stroke="#6B8AB5" stroke-width="1"/>
+          <text x="880" y="300" fill="#6B8AB5" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8">FRAMEWORKS · LIBRARIES</text>
+          <text x="880" y="338" fill="#ECE8DE" font-family="Fraunces" font-size="24" font-weight="400">Enterprise</text>
+          <text x="880" y="365" fill="#ECE8DE" font-family="Fraunces" font-size="24" font-weight="400" font-style="italic">Development</text>
+          <text x="880" y="390" fill="#A29C8C" font-family="IBM Plex Mono" font-size="10">Common models · Reference apps</text>
+        </g>
+
+        <!-- Customer Orgs (bottom) -->
+        <g>
+          <rect x="140" y="540" width="260" height="100" fill="url(#verdGlow)" stroke="#4A8C7F" stroke-width="1"/>
+          <text x="160" y="568" fill="#4A8C7F" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8">SELF-SUFFICIENT</text>
+          <text x="160" y="602" fill="#ECE8DE" font-family="Fraunces" font-size="20" font-weight="400">Customer orgs</text>
+          <text x="160" y="625" fill="#A29C8C" font-family="IBM Plex Mono" font-size="10">Own infra, own governance</text>
+        </g>
+
+        <g>
+          <rect x="470" y="540" width="260" height="100" fill="url(#verdGlow)" stroke="#4A8C7F" stroke-width="1"/>
+          <text x="490" y="568" fill="#4A8C7F" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8">HYBRID</text>
+          <text x="490" y="602" fill="#ECE8DE" font-family="Fraunces" font-size="20" font-weight="400">Customer orgs</text>
+          <text x="490" y="625" fill="#A29C8C" font-family="IBM Plex Mono" font-size="10">Mix own + managed services</text>
+        </g>
+
+        <g>
+          <rect x="800" y="540" width="260" height="100" fill="url(#verdGlow)" stroke="#4A8C7F" stroke-width="1"/>
+          <text x="820" y="568" fill="#4A8C7F" font-family="IBM Plex Mono" font-size="10" letter-spacing="1.8">MANAGED</text>
+          <text x="820" y="602" fill="#ECE8DE" font-family="Fraunces" font-size="20" font-weight="400">Customer orgs</text>
+          <text x="820" y="625" fill="#A29C8C" font-family="IBM Plex Mono" font-size="10">Consume our shared services</text>
+        </g>
+
+        <!-- Connection lines -->
+        <!-- Security → COE -->
+        <path d="M 600 180 L 600 252" stroke="#5A554A" stroke-width="1" fill="none" marker-end="url(#arrow)" stroke-dasharray="2 3"/>
+        <!-- Managed → COE -->
+        <path d="M 340 340 L 512 340" stroke="#C9A961" stroke-width="1.2" fill="none" marker-end="url(#arrowBrass)"/>
+        <!-- Development → COE -->
+        <path d="M 860 340 L 688 340" stroke="#5A554A" stroke-width="1" fill="none" marker-end="url(#arrow)" stroke-dasharray="2 3"/>
+        <!-- COE → Customers -->
+        <path d="M 560 410 Q 400 470 270 540" stroke="#5A554A" stroke-width="1" fill="none" marker-end="url(#arrow)" stroke-dasharray="2 3"/>
+        <path d="M 600 428 L 600 540" stroke="#5A554A" stroke-width="1" fill="none" marker-end="url(#arrow)" stroke-dasharray="2 3"/>
+        <path d="M 640 410 Q 800 470 930 540" stroke="#5A554A" stroke-width="1" fill="none" marker-end="url(#arrow)" stroke-dasharray="2 3"/>
+
+        <!-- Labels on lines -->
+        <text x="610" y="220" fill="#A29C8C" font-family="IBM Plex Mono" font-size="9">publishes policy</text>
+        <text x="380" y="332" fill="#C9A961" font-family="IBM Plex Mono" font-size="9">leads secretariat</text>
+        <text x="700" y="332" fill="#A29C8C" font-family="IBM Plex Mono" font-size="9">contributes frameworks</text>
+        <text x="455" y="500" fill="#A29C8C" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">patterns · templates · workflows</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ============ FEDERATION FLOW ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 04 / Flow</div>
+      <div>
+        <h2 class="sec-title">How a policy <span class="emph">travels.</span></h2>
+        <p class="sec-lede">A single standard moves through four distinct states on its way from drafting to daily developer experience. Each stage is someone's responsibility; each produces a specific artifact that survives the stage.</p>
+      </div>
+    </div>
+
+    <div class="fedflow">
+      <div class="fedflow-stages">
+        <div class="fstage">
+          <div class="fstage-node ember">01</div>
+          <div class="fstage-label">Draft</div>
+          <h3 class="fstage-title">Decision proposed in COE</h3>
+          <p class="fstage-desc">An artifact enters the backlog. Either a draft ADR, a prototype repo, or a sample workflow. Opinions without artifacts get parked.</p>
+        </div>
+        <div class="fstage">
+          <div class="fstage-node brass">02</div>
+          <div class="fstage-label">Codify</div>
+          <h3 class="fstage-title">ADR + reference repo</h3>
+          <p class="fstage-desc">Decision recorded, numbered, immutable. A reference implementation lives in the shared platform repo, versioned and tagged.</p>
+        </div>
+        <div class="fstage">
+          <div class="fstage-node steel">03</div>
+          <div class="fstage-label">Publish</div>
+          <h3 class="fstage-title">Template + reusable workflow</h3>
+          <p class="fstage-desc">Turned into a consumable primitive. Repo template, starter workflow, Copilot instruction file, MCP config. Discoverable from the docs site.</p>
+        </div>
+        <div class="fstage">
+          <div class="fstage-node verdigris">04</div>
+          <div class="fstage-label">Adopt</div>
+          <h3 class="fstage-title">Measured in posture</h3>
+          <p class="fstage-desc">Adoption surfaces in the compliance dashboard. Evidence flows to Enterprise Security automatically. Audit cycle takes days, not weeks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DEVEX STACK ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 05 / Experience</div>
+      <div>
+        <h2 class="sec-title">The developer's <span class="emph">stack</span>, from chair to cloud.</h2>
+        <p class="sec-lede">Every layer below exists to make the correct behavior the default behavior. No layer is optional for participation; each layer can be adopted incrementally.</p>
+      </div>
+    </div>
+
+    <div class="devex">
+      <div class="devex-stack">
+        <div class="devex-layer">
+          <div class="devex-idx">L08</div>
+          <div class="devex-main">
+            <div class="name">External systems</div>
+            <div class="desc">SQL · Azure · AWS · CMDB · Observability</div>
+          </div>
+          <div class="devex-icon">↗</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L07</div>
+          <div class="devex-main">
+            <div class="name">MCP servers</div>
+            <div class="desc">Approved registry · remote-hosted · SSO-bound</div>
+          </div>
+          <div class="devex-icon">◐</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L06</div>
+          <div class="devex-main">
+            <div class="name">Copilot knowledge bases</div>
+            <div class="desc">Grounded in our standards, not the open web</div>
+          </div>
+          <div class="devex-icon">◆</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L05</div>
+          <div class="devex-main">
+            <div class="name">Instruction & prompt files</div>
+            <div class="desc">.github/copilot-instructions.md · /prompts/*</div>
+          </div>
+          <div class="devex-icon">§</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L04</div>
+          <div class="devex-main">
+            <div class="name">Copilot Enterprise</div>
+            <div class="desc">Chat · edit · agent · code review</div>
+          </div>
+          <div class="devex-icon">✦</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L03</div>
+          <div class="devex-main">
+            <div class="name">Multi-root workspaces</div>
+            <div class="desc">One per problem space, checked into a shared repo</div>
+          </div>
+          <div class="devex-icon">◫</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L02</div>
+          <div class="devex-main">
+            <div class="name">VS Code profiles</div>
+            <div class="desc">Data · Cloud · PowerShell · DevSecOps · Docs</div>
+          </div>
+          <div class="devex-icon">▤</div>
+        </div>
+        <div class="devex-layer">
+          <div class="devex-idx">L01</div>
+          <div class="devex-main">
+            <div class="name">Host + WSL + Git + GCM</div>
+            <div class="desc">EMU-scoped credentials · PowerShell 7 · Ubuntu 24.04</div>
+          </div>
+          <div class="devex-icon">▣</div>
+        </div>
+      </div>
+
+      <div class="devex-explainer">
+        <h3>The stack earns its keep through <em>context</em>.</h3>
+        <p>A developer opening a repo hits every layer in order. The profile loads the right extensions. The workspace tells Copilot which repos to consider together. Instruction files shape what Copilot writes. Knowledge bases ground the answers. MCP servers let Chat reach into real systems — a live SQL schema, an Azure policy assignment, a PR review thread.</p>
+
+        <div class="pullquote">Most of the value of Copilot Enterprise is in features people don't know about. Instruction files, knowledge bases, MCP — these turn an autocomplete into a teammate who knows how we work.</div>
+
+        <p>No layer requires the ones above it. A team can adopt profiles without workspaces, workspaces without MCP, MCP without knowledge bases. We publish the stack so each team can start where it makes sense for them.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ROLLOUT ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 06 / Rollout</div>
+      <div>
+        <h2 class="sec-title">Five <span class="emph">stages</span>, none skipped.</h2>
+        <p class="sec-lede">Each stage is a COE agenda item with an artifact. We don't start a stage until the prior one is stable. Stages are not dates — they're conditions.</p>
+      </div>
+    </div>
+
+    <div class="rollout">
+
+      <div class="rollout-stage">
+        <div class="rollout-marker">
+          <div class="num">01</div>
+          <div class="lbl">Foundations</div>
+        </div>
+        <div>
+          <h3 class="rollout-title">Mostly <em>invisible</em> to developers.</h3>
+          <p class="rollout-body">SSO and SCIM enforced. Audit log streaming to the enterprise SIEM. Enterprise-level secret scanning with push protection. Dependabot on by default. Low-risk, high-leverage, and the prerequisite for everything that follows.</p>
+        </div>
+        <div class="rollout-controls">
+          <div class="ctrl foundation">SSO · SCIM</div>
+          <div class="ctrl foundation">Audit log streaming</div>
+          <div class="ctrl foundation">Secret scan + push protection</div>
+          <div class="ctrl foundation">Dependabot defaults</div>
+        </div>
+      </div>
+
+      <div class="rollout-stage">
+        <div class="rollout-marker">
+          <div class="num">02</div>
+          <div class="lbl">Baseline CI</div>
+        </div>
+        <div>
+          <h3 class="rollout-title">A floor for <em>every</em> pipeline.</h3>
+          <p class="rollout-body">Required reusable workflow for security scans on a pilot set of repos. CodeQL on all supported languages. SBOM generation per build. Measured by coverage percentage across tagged repos.</p>
+        </div>
+        <div class="rollout-controls">
+          <div class="ctrl baseline">Required reusable workflows</div>
+          <div class="ctrl baseline">CodeQL coverage</div>
+          <div class="ctrl baseline">SBOM generation</div>
+          <div class="ctrl baseline">Coverage dashboard</div>
+        </div>
+      </div>
+
+      <div class="rollout-stage">
+        <div class="rollout-marker">
+          <div class="num">03</div>
+          <div class="lbl">Provenance</div>
+        </div>
+        <div>
+          <h3 class="rollout-title">Everything built is <em>attributable</em>.</h3>
+          <p class="rollout-body">OIDC federation for all cloud deployments — no long-lived credentials in GitHub Secrets. Signed commits on any repo with compliance scope. Build provenance attestations generated on release. SLSA level framing applied where relevant.</p>
+        </div>
+        <div class="rollout-controls">
+          <div class="ctrl provenance">OIDC cloud auth</div>
+          <div class="ctrl provenance">Signed commits</div>
+          <div class="ctrl provenance">Build attestations</div>
+          <div class="ctrl provenance">SLSA posture</div>
+        </div>
+      </div>
+
+      <div class="rollout-stage">
+        <div class="rollout-marker">
+          <div class="num">04</div>
+          <div class="lbl">Differentiated</div>
+        </div>
+        <div>
+          <h3 class="rollout-title">Policy <em>targets</em> property, not name.</h3>
+          <p class="rollout-body">Rulesets targeting custom properties replace hand-edited branch protection. Stricter controls on restricted and CJIS-scoped repos. Environment protection rules on production deployments with required approvers.</p>
+        </div>
+        <div class="rollout-controls">
+          <div class="ctrl differentiated">Property-based rulesets</div>
+          <div class="ctrl differentiated">CJIS / restricted controls</div>
+          <div class="ctrl differentiated">Environment protections</div>
+          <div class="ctrl differentiated">Required approvers</div>
+        </div>
+      </div>
+
+      <div class="rollout-stage">
+        <div class="rollout-marker">
+          <div class="num">05</div>
+          <div class="lbl">Continuous</div>
+        </div>
+        <div>
+          <h3 class="rollout-title">Evidence <em>flows</em>, not gathered.</h3>
+          <p class="rollout-body">Dashboards aggregating posture per repo. Automated audit evidence bundles. Compliance scope maps to a defined control set automatically. Enterprise Security consumes telemetry instead of requesting it. Audit cycle becomes a review, not an archaeology dig.</p>
+        </div>
+        <div class="rollout-controls">
+          <div class="ctrl continuous">Posture dashboards</div>
+          <div class="ctrl continuous">Automated evidence</div>
+          <div class="ctrl continuous">Control-set mapping</div>
+          <div class="ctrl continuous">Streaming telemetry</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ FRAMEWORKS ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 07 / Anchors</div>
+      <div>
+        <h2 class="sec-title">The standards we <span class="emph">speak.</span></h2>
+        <p class="sec-lede">Security architecture choices reference established frameworks rather than inventing new ones. Auditors, customer orgs, and Enterprise Security all recognize this vocabulary. Deviations are recorded as ADRs.</p>
+      </div>
+    </div>
+
+    <div class="frameworks">
+      <div class="framework">
+        <div class="framework-mark">§</div>
+        <div class="framework-name">NIST · SP 800-218</div>
+        <div class="framework-full">Secure Software<br>Development Framework</div>
+        <div class="framework-use">The baseline for how CI/CD security controls are structured. Maps directly to our reusable workflows.</div>
+      </div>
+      <div class="framework">
+        <div class="framework-mark">§</div>
+        <div class="framework-name">NIST · SP 800-207</div>
+        <div class="framework-full">Zero Trust<br>Architecture</div>
+        <div class="framework-use">Applied to identity, device, workload, and data. Shapes our OIDC, attestation, and continuous verification posture.</div>
+      </div>
+      <div class="framework">
+        <div class="framework-mark">§</div>
+        <div class="framework-name">NIST · SP 800-53</div>
+        <div class="framework-full">Security &amp; Privacy<br>Control Catalog</div>
+        <div class="framework-use">The lingua franca when customer orgs ask which control a workflow maps to.</div>
+      </div>
+      <div class="framework">
+        <div class="framework-mark">§</div>
+        <div class="framework-name">CJIS Security Policy</div>
+        <div class="framework-full">Criminal Justice<br>Information Services</div>
+        <div class="framework-use">Required for repos tagged compliance-scope = cjis. Drives logging, access, and data handling controls.</div>
+      </div>
+      <div class="framework">
+        <div class="framework-mark">§</div>
+        <div class="framework-name">CIS Benchmarks</div>
+        <div class="framework-full">Hardening baselines<br>for underlying platforms</div>
+        <div class="framework-use">Applied to container images, VM baselines, and cloud workloads below the code layer.</div>
+      </div>
+      <div class="framework">
+        <div class="framework-mark">§</div>
+        <div class="framework-name">OWASP · SAMM / ASVS</div>
+        <div class="framework-full">Maturity &amp; Verification<br>for application security</div>
+        <div class="framework-use">Structures how we measure appsec maturity across orgs and define the verification bar per tier.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COE CORE ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 08 / COE</div>
+      <div>
+        <h2 class="sec-title">A body that <span class="emph">ships</span>, not one that meets.</h2>
+        <p class="sec-lede">The DevSecOps Center of Excellence fails when it produces slides without code and succeeds when every session moves at least one artifact forward. Its output — not its cadence — is the measure.</p>
+      </div>
+    </div>
+
+    <div class="coe">
+      <div class="coe-quote">
+        The COE is an <em>artifact-producing body</em>. A proposal must carry a draft ADR or a prototype repo. Opinions without artifacts get parked.
+      </div>
+      <div class="coe-outputs">
+        <div class="coe-output">
+          <div class="idx">I.</div>
+          <div class="txt">Architecture Decision Records <em>numbered, immutable</em></div>
+        </div>
+        <div class="coe-output">
+          <div class="idx">II.</div>
+          <div class="txt">Standards documents <em>checklists, not essays</em></div>
+        </div>
+        <div class="coe-output">
+          <div class="idx">III.</div>
+          <div class="txt">Reference implementations <em>real, running repos</em></div>
+        </div>
+        <div class="coe-output">
+          <div class="idx">IV.</div>
+          <div class="txt">Reusable workflows &amp; templates <em>the path of least resistance</em></div>
+        </div>
+        <div class="coe-output">
+          <div class="idx">V.</div>
+          <div class="txt">Adoption measurement <em>posture over promise</em></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESPONSIBILITY MATRIX ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§ 09 / Matrix</div>
+      <div>
+        <h2 class="sec-title">Who owns <span class="emph">what</span>, and where it goes.</h2>
+        <p class="sec-lede">The current state reflects interim ownership. The target column shows where responsibility properly resides. Transitions move piece-by-piece, with runbooks written now so handoffs are paperwork.</p>
+      </div>
+    </div>
+
+    <div class="matrix">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 28%">Scope</th>
+            <th style="width: 24%">Sets</th>
+            <th style="width: 24%">Enforces</th>
+            <th style="width: 24%">Audits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="scope">Enterprise security baseline<div class="sub">SSO · exclusions · secret scan</div></td>
+            <td class="actor"><span class="pri">Enterprise Security</span><span class="trans">→ today: us (interim)</span></td>
+            <td class="actor">Platform (us)</td>
+            <td class="actor">Enterprise Security</td>
+          </tr>
+          <tr>
+            <td class="scope">Required rulesets &amp; workflows<div class="sub">branch protection · codeql · sbom</div></td>
+            <td class="actor"><span class="pri">Enterprise Security</span></td>
+            <td class="actor">GitHub admins</td>
+            <td class="actor">Enterprise Security</td>
+          </tr>
+          <tr>
+            <td class="scope">Copilot content exclusions<div class="sub">credential paths · regulated data</div></td>
+            <td class="actor"><span class="pri">Enterprise Security</span><span class="trans">→ today: us (interim)</span></td>
+            <td class="actor">Enterprise-level setting</td>
+            <td class="actor">Enterprise Security</td>
+          </tr>
+          <tr>
+            <td class="scope">Recommended templates &amp; workflows<div class="sub">data · cloud · iac archetypes</div></td>
+            <td class="actor"><span class="pri">Our org (Platform)</span></td>
+            <td class="actor">Inner source adoption</td>
+            <td class="actor">COE dashboards</td>
+          </tr>
+          <tr>
+            <td class="scope">Copilot knowledge bases<div class="sub">data platform · devsecops · cloud</div></td>
+            <td class="actor"><span class="pri">Our org (Platform)</span></td>
+            <td class="actor">Org-level Copilot</td>
+            <td class="actor">COE review</td>
+          </tr>
+          <tr>
+            <td class="scope">MCP approved registry<div class="sub">hosting · tier · review status</div></td>
+            <td class="actor"><span class="pri">DevSecOps COE</span></td>
+            <td class="actor">Platform (us)</td>
+            <td class="actor">Enterprise Security sign-off</td>
+          </tr>
+          <tr>
+            <td class="scope">Common frameworks &amp; libraries<div class="sub">shared apps · reference impls</div></td>
+            <td class="actor"><span class="pri">Enterprise Development</span></td>
+            <td class="actor">Consuming orgs</td>
+            <td class="actor">Ent. Dev + COE</td>
+          </tr>
+          <tr>
+            <td class="scope">Repo CODEOWNERS &amp; branch protection beyond baseline<div class="sub">service-tier specifics</div></td>
+            <td class="actor"><span class="pri">Repo owner</span></td>
+            <td class="actor">Repo owner</td>
+            <td class="actor">COE dashboards</td>
+          </tr>
+          <tr>
+            <td class="scope">GitHub tenancy administration<div class="sub">enterprise-level configuration</div></td>
+            <td class="actor"><span class="pri">Enterprise Security</span><span class="trans">→ today: us (handoff planned)</span></td>
+            <td class="actor">Tenancy admin team</td>
+            <td class="actor">Enterprise Security</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ COLOPHON ============ -->
+  <footer class="colophon">
+    <div>
+      <h5>A note on this edition</h5>
+      <p>This document is a living map, not a destination. It will be wrong in places, and those places will be corrected by ADR. The value is not in the document itself but in the shared vocabulary it creates — every team starting from the same picture, every decision grounded in a traceable reason, every standard published as something a developer can pick up and use.</p>
+      <div class="sig">— The DevSecOps COE</div>
+    </div>
+    <div>
+      <h5>Set in</h5>
+      Fraunces<br>
+      IBM Plex Sans<br>
+      IBM Plex Mono<br><br>
+      <h5>Palette</h5>
+      Ink · Brass · Copper<br>
+      Steel · Verdigris · Ember
+    </div>
+    <div>
+      <h5>Published</h5>
+      DSOA-001<br>
+      Edition I, Draft<br><br>
+      <h5>Reach</h5>
+      COE repository<br>
+      Org: Platform Services<br>
+      Review: Rolling
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>
