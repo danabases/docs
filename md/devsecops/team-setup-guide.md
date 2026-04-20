@@ -1,455 +1,242 @@
-# Team Setup Guide
+# Team Setup Guide — VS Code, Copilot, MCP, and Workspaces
 
-## VS Code, Copilot, MCP, and Workspaces — Draft v3
+**Purpose.** A portable guide for our team and close collaborators. Takes you from a fresh Windows machine to a working, consistent environment aligned with how we do development, database, cloud, and security work. Written so someone new to VS Code, Copilot, or MCP can follow it without outside context.
 
-**Purpose.** A portable, step-by-step guide for our team and all collaborating teams within Enterprise Technology Services (ETS) and adjacent teams. Takes you from a fresh Windows machine to a working, consistent environment. Written for any skill level — no prior VS Code, Copilot, or MCP experience assumed.
+**Audience.** DBAs, developers, architects, and engineers on our team and adjacent teams we collaborate with closely. No prior experience required.
 
-**Audience.** Data platform / DBA (Database Administrator), Platform Engineering, IAM (Identity and Access Management), SecOps (Security Operations), Networking/Firewall, Backup, Automation, and adjacent teams collaborating through our shared GitHub org.
+**How to use this.** Read section 1 first. Do section 2. Then pick the sections relevant to your role. The whole thing takes a few hours the first time. Updating later is quick.
 
-**How to use this.** Read §1 first. Do §2. Then pick the sections matching your role. The full setup takes a few hours the first time.
-
-**Change log from v2:**
-
-- Removed Azure Data Studio (retired by Microsoft — see §2.3)
-- Audited and updated all tool recommendations
-- Added Docker Desktop licensing note with alternatives
-- Corrected branch strategy (§6)
-- Added cross-delivery workspace framework (§5)
-- Added on-prem tooling extensions: Ansible, Salt, VMware (§9)
-- Added teams and permissions setup steps (§10)
+**Companion document.** This guide focuses on the individual developer setup. For the enterprise-wide governance, rollout stages, and multi-org strategy that surrounds this work, see the *Enterprise Multi-Org DevSecOps Strategy* document.
 
 -----
 
 ## 0. Table of Contents
 
 1. Why we do this
-1. Install the basics — Windows, WSL, Git, VS Code
+1. Install the basics (Windows, Git, VS Code, WSL)
 1. Sign in and verify Copilot access
 1. VS Code Profiles — what they are and how we use them
-1. Workspaces — cross-team and cross-delivery framework
-1. Branch strategy — how we use `main` and branches
-1. The files that shape your experience
-1. Copilot — getting more out of it
+1. Workspaces — one or many, and why
+1. Copilot — getting more from it with instruction files, prompts, and Spaces
+1. MCP — connecting Copilot to real systems
 1. Extensions by role
-1. Teams and permissions setup
 1. Settings and repo scaffolding
 1. Day-in-the-life examples
 1. Troubleshooting and gotchas
-1. Glossary
+1. Glossary — plain language
 1. Where to ask questions
-1. What to do next
+1. What’s next after this guide
 
 -----
 
 ## 1. Why We Do This
 
-Most of us have VS Code installed and use Copilot casually. This guide creates a setup that is **consistent across all ETS teams**, **tuned to our specific work**, and **portable** — so any teammate can be productive on day one.
+Most of us have VS Code installed somewhere and use Copilot casually. This guide takes it one step further: a setup that’s **consistent across the team**, **tuned to our work**, and **portable** so a new teammate can be productive on day one.
 
-**The goal is not to install everything. The goal is to make the right choices the default.**
+The point isn’t to install every extension that exists. The point is to make the right choices the default — the right extensions load for the right work, Copilot knows our conventions, and our shared repos open the same way for everyone.
 
-```
-FOUR THINGS THAT DELIVER MOST OF THE VALUE:
+**Key idea: most of the value comes from four small things.**
 
-  1. PROFILES       → Right extensions load for the right work.
-                       Copilot gives better suggestions without
-                       irrelevant tools cluttering the context.
+- Profiles (so you don’t drown in extensions).
+- Workspaces (so Copilot sees the right context).
+- Instruction files and Spaces (so Copilot suggests code in our style and grounds answers in our docs).
+- MCP (so Copilot can actually *see* GitHub, SQL, Azure, etc.).
 
-  2. WORKSPACES     → Group related repos across teams so Copilot
-                       can see all relevant code when answering.
-                       Critical for cross-team collaboration.
-
-  3. INSTRUCTION    → Teach Copilot our conventions so it suggests
-     FILES            code that matches how we actually work,
-                       not generic internet examples.
-
-  4. MCP            → Connect Copilot to live systems: SQL Server
-                       schemas, Azure resources, GitHub issues,
-                       VMware Aria inventory, CMDB data.
-```
+The rest is supporting cast.
 
 -----
 
 ## 2. Install the Basics
 
-### 2.1 What Goes Where — Windows vs WSL
+Do these in order on a fresh Windows machine. If something is already installed, skip it.
 
-**WSL** = Windows Subsystem for Linux. Runs Ubuntu inside Windows. Not needed for everything — be deliberate.
+### 2.1 Required
 
-```
-KEEP ON WINDOWS                          PUT IN WSL (Ubuntu)
-──────────────────────────────────       ──────────────────────────────────
-VS Code (the editor itself)              MCP servers (run better on Linux)
-PowerShell 7 (automation / SQL)         Container security scanning
-Git + GCM (credential manager)           (Trivy, Grype)
-SQL Server tools (SSMS, sqlcmd)         IaC security scanners (Checkov,
-Azure CLI, AWS CLI                        tflint, KICS)
-Windows-authenticated SQL connections   act (test GitHub Actions locally)
-SSDT / SQL Database Projects            Node.js / Python dev tools
-BCP (Bulk Copy Program)                  (where Windows paths cause issues)
-PowerCLI (VMware PowerShell module)
-```
-
-### 2.2 Core Install — Windows
-
-Open PowerShell (search “PowerShell” in Start — Admin if available):
+Open PowerShell as Administrator (or use a regular terminal if your machine restricts admin). Install via `winget`:
 
 ```powershell
-# Git — version control system
 winget install --id Git.Git -e
-
-# PowerShell 7.x — current version; keep 5.1 for legacy tools only
 winget install --id Microsoft.PowerShell -e
-
-# VS Code — the editor
 winget install --id Microsoft.VisualStudioCode -e
 ```
 
-Direct download links if winget is unavailable:
+If `winget` isn’t available or allowed, download installers from:
 
 - Git: https://git-scm.com/download/win
 - PowerShell 7: https://aka.ms/powershell
 - VS Code: https://code.visualstudio.com/
 
-### 2.3 Tool-by-Tool Reference — What to Install and Why
+### 2.2 Recommended — WSL2
 
-#### SQL Server and Data Tools
+WSL lets you run Linux alongside Windows. You’ll want it for:
 
-```powershell
-# SSMS (SQL Server Management Studio) — primary GUI for SQL Server
-# Still actively maintained by Microsoft. Install this.
-winget install --id Microsoft.SQLServerManagementStudio -e
-
-# NOTE: Azure Data Studio has been RETIRED by Microsoft.
-# Do NOT install it. It will not receive updates or bug fixes.
-# VS Code with the mssql extension covers most of what ADS did.
-# For richer multi-database visual browsing, see DBeaver below.
-
-# sqlcmd — the modern Go-based version (not the legacy C++ version)
-# The new version supports MFA, service principals, and JSON output
-winget install --id Microsoft.SQLCmd -e
-
-# SqlPackage — for DACPAC (database schema package) deployments
-winget install --id Microsoft.SqlPackage -e
-```
-
-**What to use instead of Azure Data Studio:**
-
-|What you did in ADS           |Use instead                                               |
-|------------------------------|----------------------------------------------------------|
-|Query editor with results grid|VS Code + mssql extension (same team, actively maintained)|
-|Notebook-style SQL            |VS Code + mssql extension supports notebooks              |
-|Multi-database browsing       |DBeaver Community (free, excellent)                       |
-|Schema compare                |VS Code SQL Database Projects extension                   |
-|SSDT-style projects           |VS Code SQL Database Projects extension                   |
-
-**DBeaver Community** (free, cross-platform, supports SQL Server, PostgreSQL, MySQL, Oracle, SQLite, and more):
+- Running MCP servers that behave better on Linux.
+- Container and security scanning tools (Trivy, Checkov, tfsec).
+- Anything Node or Python where Windows paths get awkward.
 
 ```powershell
-winget install --id DBeaver.DBeaver -e
-```
-
-#### Cloud Tools
-
-```powershell
-# Azure CLI — command-line tool for Azure
-winget install --id Microsoft.AzureCLI -e
-
-# AWS CLI v2 — command-line tool for Amazon Web Services
-winget install --id Amazon.AWSCLI -e
-```
-
-#### Container Runtime
-
-```powershell
-# Docker Desktop — container runtime
-# IMPORTANT: As of 2022, Docker Desktop requires a paid subscription
-# for organizations with >250 employees or >$10M annual revenue.
-# Check your enterprise license before installing.
-winget install --id Docker.DockerDesktop -e
-
-# FREE ALTERNATIVES (no subscription required):
-# Podman Desktop — Docker-compatible, rootless, open-source
-winget install --id RedHat.Podman-Desktop -e
-
-# Rancher Desktop — includes containerd + nerdctl + optional dockerd
-# Download from: https://rancherdesktop.io/
-```
-
-#### SqlServer PowerShell Module
-
-```powershell
-# Run in PowerShell 7 (not Windows PowerShell 5.1)
-Install-Module -Name SqlServer -Scope CurrentUser -Force
-```
-
-### 2.4 WSL2 and Ubuntu
-
-```powershell
-# Install WSL2 with Ubuntu 24.04 LTS
 wsl --install -d Ubuntu-24.04
 ```
 
-Restart when prompted. Create a username and password inside Ubuntu — these are separate from your Windows credentials.
+Restart when prompted. Set a username and password inside Ubuntu.
 
-### 2.5 Tools Inside WSL
+**You don’t need WSL for everything.** SQL Server work, PowerShell, Azure/AWS CLI, SSMS, Azure Data Studio, and Windows-authenticated tooling all stay on the Windows side. WSL is a second environment, not a replacement.
 
-Open Ubuntu terminal for these:
+### 2.3 Cloud and Data Tools (install what matters for your role)
 
-```bash
-# Node.js via nvm (Node Version Manager)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-# Close and reopen terminal, then:
-nvm install --lts
-
-# Python via uv (fast Python package/environment manager)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Trivy — scans containers, file systems, IaC for vulnerabilities
-# Now covers Terraform scanning (replaces standalone tfsec for most cases)
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-  | sudo sh -s -- -b /usr/local/bin
-
-# Checkov — IaC security scanner (Terraform, Bicep, CloudFormation, Ansible)
-pip3 install checkov --user
-
-# tflint — Terraform linter (catches provider-specific issues)
-curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh \
-  | bash
-
-# cfn-lint — AWS CloudFormation template linter
-pip3 install cfn-lint --user
-
-# KICS (Keeping Infrastructure as Code Secure) — multi-IaC scanner
-# Download from: https://github.com/Checkmarx/kics/releases
-# Or via Docker: docker run -v $(pwd):/path checkmarx/kics scan -p /path
-
-# act — run GitHub Actions workflows locally for testing
-curl https://raw.githubusercontent.com/nektos/act/master/install.sh \
-  | sudo bash
-
-# Ansible — agentless configuration management
-pip3 install ansible --user
-ansible --version  # verify
-
-# ansible-lint — linter for Ansible playbooks and roles
-pip3 install ansible-lint --user
-
-# ansible-navigator — modern Ansible runner with execution environments
-pip3 install ansible-navigator --user
-
-# salt-lint — linter for SaltStack state files
-pip3 install salt-lint --user
-
-# Terraform (if needed inside WSL)
-# See: https://developer.hashicorp.com/terraform/install#linux
-```
-
-**Note on tfsec:** Aqua Security (which maintains both Trivy and tfsec) has integrated Terraform scanning into Trivy. For new setups, Trivy alone covers Terraform IaC scanning. tfsec is still maintained and usable but Trivy is the forward-looking choice.
-
-### 2.6 VMware / PowerCLI (Windows-side)
-
-PowerCLI (VMware’s PowerShell module) must run on Windows because it uses Windows-native COM objects for some operations:
+On Windows:
 
 ```powershell
-# Install PowerCLI — VMware's PowerShell management module
-Install-Module -Name VMware.PowerCLI -Scope CurrentUser
-Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
-
-# Verify
-Get-Module -Name VMware.PowerCLI -ListAvailable
+winget install --id Microsoft.AzureCLI -e
+winget install --id Amazon.AWSCLI -e
+winget install --id Microsoft.SQLServerManagementStudio -e
+winget install --id Microsoft.AzureDataStudio -e
 ```
 
-### 2.7 Git Credential Manager — Prevent Account Confusion
+The `SqlServer` PowerShell module:
 
-**GCM (Git Credential Manager)** stores authentication tokens. Without correct configuration, it will use the wrong GitHub account on machines with both personal and enterprise EMU accounts.
+```powershell
+Install-Module -Name SqlServer -Scope CurrentUser
+```
 
-**EMU** = Enterprise Managed User. Our enterprise GitHub accounts are EMU accounts — provisioned by our identity provider, not created personally. They look like `your_name_enterpriseslug` (note the underscore and enterprise suffix).
+Inside WSL (Ubuntu terminal):
 
-In your Windows `~/.gitconfig` (open with `notepad $HOME/.gitconfig`):
+```bash
+# Node via nvm — check https://github.com/nvm-sh/nvm for the current version before pasting
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+# reopen terminal
+nvm install --lts
 
-```gitconfig
+# Python via uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Azure CLI, AWS CLI per the vendor docs for Ubuntu
+```
+
+> Pin install URLs to known-good versions in our internal copy of this guide. The `master` branch is fine for first install, but versioned tags are safer for reproducible onboarding scripts.
+
+### 2.4 Git Credential Manager — The One Thing That Trips People Up
+
+If you have both a personal GitHub account and our enterprise EMU account on the same machine, Git Credential Manager can get confused about which one to use. Fix this up front.
+
+In your Windows `~/.gitconfig`, add:
+
+```
 [credential "https://github.com"]
     provider = github
     useHttpPath = true
-
-[credential "https://github.com/YourEnterpriseSlug"]
-    username = your_name_enterpriseslug
+[credential "https://github.com/YourEnterprise"]
+    username = your_emu_username
 ```
 
-**Share GCM with WSL** (so you don’t authenticate twice):
+Replace `YourEnterprise` with our actual enterprise slug and `your_emu_username` with your EMU account (EMU usernames typically look like `firstname-lastname_enterpriseslug`).
+
+If you’re using WSL, you can share the Windows credential manager so you don’t have to log in twice:
 
 ```bash
-# In WSL Ubuntu terminal:
-git config --global credential.helper \
-  "/mnt/c/Program\ Files/Git/mingw64/bin/git-credential-manager.exe"
+git config --global credential.helper "/mnt/c/Program\ Files/Git/mingw64/bin/git-credential-manager.exe"
 ```
-
-**Verify:** Clone one of our enterprise repos. It should open a browser, sign in once with the EMU account, and never prompt again.
 
 -----
 
 ## 3. Sign In and Verify Copilot
 
-**Copilot Enterprise** is GitHub’s AI coding assistant at the enterprise tier. It includes inline suggestions, Chat (conversation interface), agent mode (multi-step autonomous editing), and knowledge bases (our own docs that ground its answers).
+Open VS Code. Click the account icon in the bottom-left corner. Sign in with GitHub using your **EMU identity** (not your personal account). For Commonwealth work specifically, this means your `.pennsylvania.gov`-linked EMU account.
 
-1. Open VS Code. Click the account icon (person silhouette) in the bottom-left.
-1. Choose “Sign in with GitHub.” Sign in with your **EMU account** (the `name_enterpriseslug` format).
-1. Install these extensions (`Ctrl+Shift+X` to open extensions):
-- **GitHub Copilot** (`github.copilot`) — inline suggestions
-- **GitHub Copilot Chat** (`github.copilot-chat`) — chat, agent, `@workspace`
-1. Verify: Open a code file, type a function name, wait 2 seconds for a gray suggestion. Then `Ctrl+Alt+I` to open Chat and ask something.
+Install the Copilot extensions:
 
-If it doesn’t work: `Settings → GitHub → Copilot` — confirm the enterprise account is signed in.
+- **GitHub Copilot** (code suggestions)
+- **GitHub Copilot Chat** (the chat panel, agent mode, and Spaces access)
 
------
+To verify Copilot is active:
 
-## 4. VS Code Profiles
+- Open a new file, type a function signature, see if you get a gray suggestion.
+- Open the Chat panel (`Ctrl+Alt+I`), ask it something.
+- Check the model picker in the Chat input — you should see multiple models available (GPT, Claude, Gemini variants). If the picker only shows one model, your org may need to enable additional models in Copilot policy.
 
-### 4.1 What a Profile Is
+If either doesn’t work, check `Settings → GitHub → Copilot` and confirm you’re signed in with the enterprise account. If you still can’t sign in, the org may need to add you to the Copilot seat list — ask the GitHub admin rotation.
 
-A **profile** is a bundle of extensions, settings, keybindings, snippets, and UI state. Switching profiles is instant. The alternative — one VS Code with every extension installed — is slow and gives Copilot irrelevant context.
-
-### 4.2 Profile Decision Tree
-
-```
-What are you working on?
-│
-├── Quick edit, README, ad-hoc file
-│   └── DEFAULT profile (minimal)
-│
-├── SQL Server, databases, BCP, data migrations
-│   └── SQL & DATA PLATFORM profile
-│
-├── Azure, AWS, Bicep, Terraform, Kubernetes
-│   └── CLOUD & IaC profile
-│
-├── VMware, on-prem infra, Ansible, Salt, PowerCLI
-│   └── ON-PREM PLATFORM profile
-│
-├── PowerShell scripts, modules, automation
-│   └── POWERSHELL & AUTOMATION profile
-│
-├── GitHub Actions, security scanning, OPA policies
-│   └── DEVSECOPS profile
-│
-├── IAM policy, Entra ID, SSO config, access reviews
-│   └── IDENTITY & ACCESS (IAM) profile
-│
-└── Architecture docs, ADRs, Mermaid diagrams
-    └── DOCS & ARCHITECTURE profile
-```
-
-Create profiles: `File → Profiles → New Profile`
-
-### 4.3 Core Extensions — Install in Every Profile
-
-|Extension          |ID                                     |Purpose                                    |
-|-------------------|---------------------------------------|-------------------------------------------|
-|GitHub Copilot     |`github.copilot`                       |Inline AI suggestions                      |
-|GitHub Copilot Chat|`github.copilot-chat`                  |Chat, agent mode, `@workspace`             |
-|GitLens            |`eamodio.gitlens`                      |Enhanced Git history, blame, comparison    |
-|Error Lens         |`usernamehw.errorlens`                 |Error/warning messages inline on the line  |
-|EditorConfig       |`editorconfig.editorconfig`            |Applies `.editorconfig` rules automatically|
-|Code Spell Checker |`streetsidesoftware.code-spell-checker`|Catches typos in code and comments         |
-|Markdown All in One|`yzhang.markdown-all-in-one`           |Preview and shortcuts for `.md` files      |
-|Remote - WSL       |`ms-vscode-remote.remote-wsl`          |Open WSL folders in VS Code                |
-|Remote - SSH       |`ms-vscode-remote.remote-ssh`          |Open remote server folders                 |
+**A note on premium requests.** Copilot Enterprise and Business seats include a monthly allocation of “premium requests,” which power Chat, agent mode, code review, and model selection. Most normal use stays well inside the allocation; heavy agent-mode or code-review usage can consume it faster. The Copilot usage dashboard shows consumption; the COE publishes guidance on when to switch to a faster/cheaper model for routine work.
 
 -----
 
-## 5. Workspaces — Cross-Team and Cross-Delivery Framework
+## 4. VS Code Profiles — What They Are and Why They Matter
 
-### 5.1 What a Workspace Is
+**A profile is a bundle of extensions, settings, keybindings, snippets, and UI state.** You switch between profiles depending on what you’re doing. Loading a profile is nearly instant. The alternative — one giant VS Code with 60 extensions installed — is slow and noisy, and Copilot’s suggestions get worse because it’s wading through irrelevant context.
 
-A **workspace** (`.code-workspace` file) groups multiple repos into one VS Code window. When you use `@workspace` in Copilot Chat, it searches all repos in that workspace. This is the primary mechanism for cross-team collaboration context.
+### 4.1 Profiles We Recommend
 
-### 5.2 The Cross-Delivery Problem
+Create these from `File → Profiles → New Profile`:
 
-Data platform, platform engineering, IAM, SecOps, networking, and backup all share the same GitHub org and often work on interconnected systems. Without workspaces, each team works in their own repo bubble. Questions like “how does the backup automation interact with the SQL service account that IAM provisions?” can’t be answered by Copilot because both repos aren’t open at the same time.
+- **Default** — nearly empty. For quick file edits.
+- **SQL & Data Platform** — SQL Server, database projects, Kusto, dbt.
+- **Cloud & IaC** — Azure, AWS, Bicep, Terraform, Kubernetes, Docker.
+- **PowerShell & Automation** — PowerShell, Pester.
+- **DevSecOps** — GitHub Actions, security scanners, OPA, dev containers.
+- **Docs & Architecture** — Markdown, Mermaid, Draw.io, PlantUML.
 
-Cross-delivery workspaces solve this.
+You don’t have to create all six. Create the ones matching your role. You can always add more.
 
-### 5.3 Workspace Types
+**Tip:** Our team publishes exported profile templates (`.code-profile` files) in the `workspaces` repo. You can import them directly instead of hand-curating each one.
 
-```
-WORKSPACE TAXONOMY
+### 4.2 What Goes In Every Profile
 
-Stable (permanent, live in the shared workspaces repo)
-│
-├── Single-team workspaces
-│   ├── data-platform.code-workspace
-│   │   Repos: sql-backup-automation, bcp-pipeline,
-│   │           shared-ps-modules, data-platform-adrs
-│   │
-│   ├── platform-engineering.code-workspace
-│   │   Repos: landing-zone-azure, landing-zone-aws,
-│   │           vmware-iac, shared-bicep-modules,
-│   │           shared-terraform-modules
-│   │
-│   ├── iam.code-workspace
-│   │   Repos: identity-policy, entra-id-config,
-│   │           access-review-automation, pam-config
-│   │
-│   ├── networking.code-workspace
-│   │   Repos: firewall-rules, nsx-iac,
-│   │           dns-automation, network-baselines
-│   │
-│   └── devsecops-coe.code-workspace
-│       Repos: coe-decisions, reusable-workflows,
-│               template-library, docs-site
-│
-├── Cross-delivery workspaces (permanent — active partnerships)
-│   │
-│   ├── data-platform-partnership.code-workspace
-│   │   Repos: [data repos] + [platform repos] + [iam repos]
-│   │   When: Data team working on DB server provisioning
-│   │         that involves IAM service accounts and Platform
-│   │         landing zone configuration
-│   │
-│   ├── agency-onboarding-framework.code-workspace
-│   │   Repos: [template library] + [landing zones] +
-│   │           [security baselines] + [tag validation]
-│   │   When: Building or improving the agency self-service process
-│   │
-│   └── security-integration.code-workspace
-│       Repos: [security baselines] + [COE artifacts] +
-│               [platform landing zones] + [iam policy]
-│       When: Ongoing security posture alignment work
-│
-└── Short-lived workspaces (created for a specific effort, archived after)
-    ├── customer-onboarding-<agency>.code-workspace
-    ├── coe-workstream-<topic>.code-workspace
-    ├── incident-response-<date>.code-workspace
-    └── platform-migration-<project>.code-workspace
-```
+Core extensions that are always useful:
 
-### 5.4 Cross-Delivery Workspace Design: Data + Platform + IAM
+- GitHub Copilot
+- GitHub Copilot Chat
+- GitLens
+- Error Lens
+- EditorConfig
+- Code Spell Checker
+- Markdown All in One
+- Remote - WSL
+- Remote - SSH
 
-This example shows the most common cross-team workspace configuration — data platform engineers working alongside platform and IAM:
+### 4.3 Why This Matters
+
+Switching profiles takes a second. Switching between “I’m editing T-SQL” and “I’m writing Terraform” without changing profile means Copilot sees both contexts and guesses worse. Profiles are how you keep each workspace focused.
+
+-----
+
+## 5. Workspaces — One or Many?
+
+A **workspace** is a `.code-workspace` file that groups one or more folders together. Open the workspace and you get all those folders in one VS Code window.
+
+### 5.1 The Answer: Both
+
+- **For casual work** — just open a folder. No workspace needed.
+- **For connected work across several repos** — use a multi-root workspace.
+
+### 5.2 Why Multi-Root Workspaces Are Useful
+
+When you ask Copilot Chat a question like “how does our backup script call the shared logging module,” Copilot’s `@workspace` agent searches across all folders in the workspace. If you only have one repo open, it can’t find the other one.
+
+A multi-root workspace is one of the easiest ways to give Copilot the right context.
+
+### 5.3 Suggested Workspaces
+
+Stored in a team `workspaces` repo so everyone gets the same view:
+
+- `data-platform.code-workspace` — SQL backup automation, BCP pipeline, shared PS modules, data platform ADRs.
+- `cloud-governance.code-workspace` — landing zone, control mapping, policy-as-code, cost reporting.
+- `devsecops-coe.code-workspace` — org-level `.github` repo, reusable workflows, CODEOWNERS templates, security baselines.
+- `enterprise-architecture.code-workspace` — governance artifacts, RACI docs, operating models, ADRs.
+
+Short-lived ones we create as needed:
+
+- `security-integration-<topic>.code-workspace` — when we’re working directly with Enterprise Security on something.
+- `agency-onboarding-<agency>.code-workspace` — during an onboarding engagement with another Commonwealth agency. Archived after.
+
+### 5.4 Anatomy of a `.code-workspace` File
 
 ```json
 {
   "folders": [
-    {
-      "name": "🗄️ SQL Backup Automation",
-      "path": "../repos/sql-backup-automation"
-    },
-    {
-      "name": "📦 BCP Export Pipeline",
-      "path": "../repos/bcp-export-pipeline"
-    },
-    {
-      "name": "🏗️ Azure Landing Zone",
-      "path": "../repos/landing-zone-azure"
-    },
-    {
-      "name": "🔑 IAM Service Accounts",
-      "path": "../repos/identity-policy"
-    },
-    {
-      "name": "🔧 Shared PS Modules",
-      "path": "../repos/shared-ps-modules"
-    }
+    { "name": "🗄️ SQL Backup Automation", "path": "../repos/sql-backup-automation" },
+    { "name": "📦 BCP Export Pipeline",    "path": "../repos/bcp-export-pipeline" },
+    { "name": "🔧 Shared PS Modules",      "path": "../repos/ps-shared-modules" },
+    { "name": "📐 ADRs",                   "path": "../repos/data-platform-adrs" }
   ],
   "settings": {
     "github.copilot.chat.codeGeneration.useInstructionFiles": true,
@@ -458,9 +245,7 @@ This example shows the most common cross-team workspace configuration — data p
   "extensions": {
     "recommendations": [
       "ms-mssql.mssql",
-      "ms-mssql.sql-database-projects-vscode",
       "ms-vscode.powershell",
-      "ms-azuretools.vscode-bicep",
       "github.copilot",
       "github.copilot-chat",
       "eamodio.gitlens"
@@ -469,884 +254,283 @@ This example shows the most common cross-team workspace configuration — data p
 }
 ```
 
-With this workspace open:
+The `extensions.recommendations` array matters. When anyone opens this workspace, VS Code prompts them to install the right tools. Combined with a profile, onboarding becomes automatic.
 
-```
-@workspace — how is the gMSA (Group Managed Service Account)
-provisioned by the IAM team, and how does the backup automation
-use it to connect to SQL Server?
+### 5.5 Rule of Thumb
 
-Copilot searches all five repos and answers from the actual code
-in identity-policy AND sql-backup-automation simultaneously.
-```
-
-### 5.5 Partnership Workspace Rules
-
-**Who creates them:** Any team can create a cross-delivery workspace. The workspace file lives in the `workspaces` repo which all ETS teams have read access to.
-
-**What goes in them:** Repos that are *actively* related for a joint effort. Don’t add every repo “just in case” — Copilot’s quality drops when the context is too broad.
-
-**Who maintains them:** The team that initiated the collaboration. Archive when the joint effort ends.
-
-**Branch strategy in workspace files:** The workspace file itself lives on `main` in the workspaces repo. Workspace file changes go through a PR — don’t edit workspace files directly on `main`.
+One workspace per *coherent problem space*, not per team and not per repo. If you’d naturally ask questions that span several repos together, they belong in the same workspace. If you rarely need both open, keep them separate.
 
 -----
 
-## 6. Branch Strategy — How We Use `main`
+## 6. Copilot — Getting More From It
 
-### 6.1 `main` Is the Production Version of Truth
+Most of the value of Copilot Enterprise is in features people don’t know about. This section is the most important one in this guide.
 
-In every repo we own, **`main` is the production-ready branch.** It is always deployable, always reviewed, always passing checks. It is what others clone, reference, and deploy from.
+### 6.1 Instruction Files — Shape Every Suggestion
 
-```
-STANDARD DEVELOPMENT FLOW
+Create `.github/copilot-instructions.md` in a repo. Every Copilot Chat turn in that repo automatically loads this file, and code generation gets shaped by it.
 
-  feature/add-retention-policy   ────── PR (reviewed + checks) ──► main
-  fix/bcp-quote-handling         ────── PR (reviewed + checks) ──► main
-  hotfix/cjis-audit-gap          ────── PR (reviewed + checks) ──► main
-
-  main is always:
-    ✓ Passing all required CI checks
-    ✓ Reviewed and approved (CODEOWNERS + branch protection)
-    ✓ Deployable to production
-    ✓ The thing you clone to start work
-    ✓ The version templates reference and pipelines deploy
-
-  Nobody develops directly on main.
-  Nobody force-pushes to main.
-  No exceptions — including admins.
-```
-
-**Releases are tagged on `main`:** When you publish a version of a shared module or reusable workflow, you tag the commit on `main` (`v1.0.0`, `v1.1.0`). The tag is the release; `main` is always the latest production state.
-
-### 6.2 When Version Pinning Applies (Consuming vs. Producing)
-
-This is the distinction that caused confusion in earlier versions of this guide:
-
-```
-YOU OWN THE REPO (you are the producer):
-  main = truth. Feature → PR → main. Tag releases from main.
-  ✓ This is how all our repos work.
-
-YOU ARE CALLING SOMEONE ELSE'S SHARED WORKFLOW (consumer):
-  # Fragile — their next commit breaks you with no warning:
-  uses: enterprise-security/security/.github/workflows/security-scan.yml@main
-
-  # Stable — you update on your schedule:
-  uses: enterprise-security/security/.github/workflows/security-scan.yml@v3
-```
-
-**Why pin when consuming?** If Enterprise Security pushes a breaking change to their `main`, every repo calling `@main` breaks immediately — no warning, no test period, no choice. Pinning to `@v3` means their `main` changes don’t affect you until you explicitly update your reference and test it.
-
-This is exactly how package managers work: your project’s `main` branch is your production code; your `package.json` pins `"lodash": "4.17.21"`, not `"latest"`. Their `main` branch is not your business until you decide to update.
-
-**Summary:**
-
-|You are                          |Branch     |Rule                                         |
-|---------------------------------|-----------|---------------------------------------------|
-|Producer (your repo)             |Your `main`|Truth. Protect it. Require PRs. Tag releases.|
-|Consumer (calling their workflow)|Their `@v3`|Pin to a version tag, not their `@main`      |
-
-### 6.3 Branch Naming Convention
-
-```
-Type         Prefix    Example
-──────────── ────────  ──────────────────────────────────
-Feature      feature/  feature/add-monthly-backup-rotation
-Bug fix      fix/      fix/bcp-null-handling
-Hotfix       hotfix/   hotfix/cjis-audit-log-gap
-Release prep release/  release/v2.1.0
-Experiment   exp/      exp/salt-integration-test
-```
-
-### 6.4 Required Branch Protection on `main`
-
-```
-Required branch protection for every repo (minimum):
-  ✓ Require pull request before merging
-  ✓ Require 1 approving review (2 for compliance-scoped repos)
-  ✓ Dismiss stale approvals when new commits are pushed
-  ✓ Require status checks to pass before merging
-      (security-scan, secret-scan, build, lint — not CodeQL
-       unless the repo contains C#, Python, or JavaScript)
-  ✓ Require branches to be up to date before merging
-  ✗ Do NOT allow bypassing these settings (not even for admins)
-```
-
-The “no bypassing” rule applies to everyone. If an admin needs to make an emergency change, they still open a PR — it just gets expedited review, not a bypass.
-
------
-
-## 7. The Files That Shape Your Experience
-
-### 7.1 File Map
-
-```
-A well-configured repo:
-
-repo/
-├── .github/
-│   ├── copilot-instructions.md      ← Copilot reads this for every Chat turn
-│   ├── CODEOWNERS                   ← Auto-requests reviewers on matching PRs
-│   ├── pull_request_template.md     ← Checklist every PR author sees
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md
-│   │   └── feature_request.md
-│   ├── workflows/
-│   │   ├── ci.yml                   ← Build and test
-│   │   ├── security-scan.yml        ← Semgrep + PSScriptAnalyzer (where applicable)
-│   │   ├── secret-scan.yml          ← Gitleaks custom patterns (GitHub Secret Scanning always on)
-│   │   ├── iac-scan.yml             ← Checkov + Trivy (IaC repos only)
-│   │   └── tag-validation.yml       ← Required tag check
-│   └── prompts/
-│       └── [role-specific prompts]
-│
-├── .vscode/
-│   ├── settings.json                ← Repo-level VS Code settings
-│   ├── extensions.json              ← Recommended extensions
-│   └── mcp.json                     ← MCP config (no secrets)
-│
-├── adrs/
-│   └── 0001-record-architecture-decisions.md
-│
-├── .editorconfig                    ← Cross-editor formatting
-├── .gitattributes                   ← Line ending rules
-├── .gitignore                       ← Files Git never tracks
-├── README.md                        ← What this is and how to use it
-└── SECURITY.md                      ← How to report a vulnerability
-```
-
-### 7.2 Understanding Each File
-
-**`.github/copilot-instructions.md`** — Copilot reads this automatically for every Chat turn in this repo. It shapes suggestions and generated code to match your conventions. Fill this in for every repo you own. See §8.2 for templates.
-
-**`.github/CODEOWNERS`** — Lists who reviews changes to specific file paths. When a PR touches a matching path, GitHub automatically requests review from the listed team. Example:
-
-```
-/.github/workflows/     @ets-secops @ets-devsecops-coe
-/**/*.sql               @ets-data/dba-team
-/infra/                 @ets-platform
-/adrs/                  @ets-devsecops-coe
-SECURITY.md             @ets-secops
-```
-
-**`.vscode/extensions.json`** — When anyone opens this repo, VS Code prompts them to install listed extensions:
-
-```json
-{
-  "recommendations": [
-    "ms-mssql.mssql",
-    "ms-vscode.powershell",
-    "github.copilot",
-    "github.copilot-chat"
-  ]
-}
-```
-
-**`.vscode/mcp.json`** — MCP server configuration. Safe to commit (no secrets). See §X for examples.
-
-**`.gitattributes`** — Prevents line-ending mismatches between Windows and Linux teammates. Without this, files appear changed even when content is identical.
-
------
-
-## 8. Copilot — Getting More Out of It
-
-### 8.1 The Value Ladder
-
-```
-  Basic use (inline suggestions as you type)
-       │ +
-  Chat (@workspace searches across all open repos)
-       │ +
-  Instruction files (Copilot follows your conventions)
-       │ +
-  Knowledge bases (answers grounded in our own standards)
-       │ +
-  MCP servers (Copilot sees live SQL, Azure, GitHub, VMware)
-       ↓
-  Maximum value for our kind of work
-```
-
-### 8.2 Instruction File Templates by Role
-
-**For SQL / Data Platform repos:**
+Keep instructions short, specific, and honest. Example for a PowerShell module:
 
 ```markdown
-# Copilot Instructions — [Repo Name]
+# Copilot Instructions — SQL Backup Automation
 
 ## Context
-PowerShell 7 module targeting SQL Server 2019/2022.
-Supports local, UNC, and Azure Blob destinations.
-Runs under a gMSA (Group Managed Service Account) with least-privilege.
+PowerShell 7 module for SQL Server 2019/2022/2025. Supports local, UNC, and S3 destinations. Runs under a service account with minimal SQL perms.
 
 ## Conventions
-- PowerShell: Verb-Noun naming, approved verbs only, StrictMode v3.
-  Comment-based help with at least one .EXAMPLE on all public functions.
-- T-SQL: schema-qualify all objects (dbo.TableName).
-  No SELECT *. Use sys.* catalog views not INFORMATION_SCHEMA.
-- Error handling: try/catch around BCP, 7-Zip, and CLI calls.
-  Check $LASTEXITCODE after native commands.
+- PowerShell: approved verbs, StrictMode v3, comment-based help on public functions.
+- T-SQL: schema-qualify every object. No SELECT *. Use sys.* catalog views.
 - No inline credentials. Use SqlCredential or Managed Identity.
-- Logging: Write-Verbose for diagnostics, Write-Information for events.
-  Never Write-Host.
+- Error handling: try/catch around every external call. Surface NativeCommandError details.
 
 ## Don't
-- Don't suggest Invoke-Sqlcmd without -TrustServerCertificate
-  or a cert validation note (required for SQL Server 2022+/ODBC 18+).
-- Don't swallow errors in broad try/catch without re-throwing or logging.
-- Don't generate SELECT * anywhere.
+- Don't suggest Invoke-Sqlcmd without -TrustServerCertificate or cert validation.
+- Don't use Write-Host. Use Write-Verbose or Write-Information.
+- Don't wrap everything in a broad try/catch that swallows errors.
 ```
 
-**For Platform / IaC repos (Azure Bicep):**
+You can also put `.instructions.md` files in subfolders with frontmatter targeting specific file patterns:
 
 ```markdown
-# Copilot Instructions — [Repo Name]
-
-## Context
-Bicep modules for Azure landing zone deployment.
-Targets Azure Government where applicable.
-Managed identity authentication only.
-
-## Conventions
-- Bicep: use modules for reusable components.
-  All parameters have decorators (@description, @allowed where relevant).
-  No hardcoded resource IDs — use references or parameters.
-- All resources must have required tags applied via a tags parameter.
-- Private endpoints required for all PaaS services.
-- Diagnostic settings required on all resources (logs to Log Analytics).
-
-## Don't
-- Don't generate public endpoints on storage, SQL, Key Vault, or App Service.
-- Don't hardcode subscription IDs, tenant IDs, or resource IDs.
-- Don't skip the tags parameter on any resource.
+---
+applyTo: "**/*.ps1"
+---
+Rules that apply only to PowerShell files.
 ```
 
-**For On-Prem / Ansible repos:**
+This is the single most effective way to make Copilot feel like a teammate who knows how you work.
+
+### 6.2 Prompt Files — Reusable Prompts
+
+Create `.github/prompts/<name>.prompt.md`. Invoke from Chat with `/<name>`.
+
+Example `review-tsql.prompt.md`:
 
 ```markdown
-# Copilot Instructions — [Repo Name]
+# Review T-SQL
 
-## Context
-Ansible roles and playbooks for on-premises VMware infrastructure.
-Targets RHEL 8/9 and Windows Server 2019/2022.
-Runs via Ansible Navigator with execution environments.
-No direct SSH to production — all runs via AWX/Ansible Automation Platform.
-
-## Conventions
-- Roles: follow ansible-galaxy structure (tasks, handlers, defaults, vars).
-  Idempotent — running twice should produce no changes on second run.
-- Variables: use defaults/main.yml for defaults, override in host_vars/group_vars.
-- No hardcoded credentials. Use ansible-vault or AAP credentials.
-- Tasks: always use FQCN (Fully Qualified Collection Name):
-  ansible.builtin.package not just package.
-- Tags: always tag tasks for selective execution.
-
-## Don't
-- Don't use shell or command module where an Ansible module exists.
-- Don't hardcode IP addresses or hostnames — use inventory variables.
-- Don't store secrets in plaintext anywhere in the repo.
-```
-
-**For Salt Formula repos:**
-
-```markdown
-# Copilot Instructions — [Repo Name]
-
-## Context
-SaltStack formulas for on-premises configuration management.
-Manages VMware-hosted RHEL and Windows nodes.
-Integrated with VMware Aria Automation for post-provisioning config.
-
-## Conventions
-- Formulas: follow Salt formula conventions (init.sls, map.jinja).
-  Idempotent — states should be safe to run repeatedly.
-- Use Jinja2 templating with map.jinja for OS-specific values.
-- Pillar data for all secrets and environment-specific values.
-- Requisites: use require, watch, onchanges appropriately.
-
-## Don't
-- Don't hardcode values that should come from pillar.
-- Don't skip requisites where order matters.
-- Don't use cmd.run where a Salt module handles the task.
-```
-
-### 8.3 Prompt Files
-
-Create `.github/prompts/<n>.prompt.md` — invoke with `/<n>` in Chat.
-
-**`/review-tsql`:**
-
-```markdown
 Review the selected T-SQL for:
-1. Sargability — are predicates index-friendly? Flag functions around
-   columns in WHERE clauses, implicit type conversions.
-2. NOLOCK — is it present? Is it justified with a comment?
-   NOLOCK can return dirty/phantom rows. Flag unjustified use.
-3. SELECT * — flag all occurrences. Columns must be explicit.
-4. Schema qualification — every object must be schema.Name.
-5. Implicit conversions — VARCHAR compared to INT, etc.
-6. Covering index candidates — based on WHERE/JOIN patterns.
-Return numbered findings with line numbers.
+- Sargability (can indexes be used?)
+- Implicit type conversions
+- NOLOCK usage (and whether it's justified)
+- SELECT * usage
+- Missing or redundant indexes suggested by the query
+- Schema qualification on every object
+
+Return a short list of findings with line references.
 ```
 
-**`/review-ansible`:**
+Other good ones to have:
 
-```markdown
-Review the selected Ansible for:
-1. Idempotency — will running this twice cause problems?
-2. FQCN — are all module names fully qualified (ansible.builtin.)?
-3. Hardcoded values — credentials, IPs, hostnames that should be variables.
-4. Shell/command usage — is there an Ansible module for this task instead?
-5. Error handling — are failed_when/changed_when used appropriately?
-6. Tags — are tasks tagged for selective execution?
-Return numbered findings with line numbers.
-```
+- `/harden-powershell`
+- `/generate-adr`
+- `/threat-model`
+- `/security-review`
 
-**`/review-terraform`:**
+### 6.3 Copilot Spaces — Ground Answers in Our Docs
 
-```markdown
-Review the selected Terraform for:
-1. Required tags — are all required tags (environment, owning-team,
-   agency-code, data-classification, compliance-scope) present on
-   every resource?
-2. Hardcoded values — credentials, account IDs, region names that
-   should be variables.
-3. State backend — is remote state configured? Not local.
-4. Provider version pinning — is the provider version pinned to
-   a minor version (~> 2.x)?
-5. Security groups/NSGs — are overly permissive rules present (0.0.0.0/0)?
-6. Public exposure — any resource with public access that shouldn't have it?
-Return numbered findings with line numbers.
-```
+**Important update.** Copilot *Knowledge Bases* were retired on November 1, 2025 and fully replaced by **Copilot Spaces**. If you remember hearing about “knowledge bases” from older documentation, the modern equivalent is a Space.
 
-### 8.4 Knowledge Bases Available
+A **Space** is a curated container that Copilot uses as grounding context for Chat. Unlike the old knowledge bases (which were Markdown-only and organization-owner-created), Spaces can include:
 
-```
-@Data-Platform-Standards   → SQL Server conventions, backup policy, DBA standards
-@Cloud-Landing-Zone        → Azure and AWS landing zone patterns, control mappings
-@On-Prem-Platform          → VMware, Salt, Ansible runbooks and patterns
-@Security-Standards        → Enterprise Security's required policies
-@DevSecOps-COE-Patterns    → CI/CD standards, reusable workflows, templates
-@State-Compliance          → CJIS, NIST, tagging standards, state policy
-```
+- Code files from one or more repos (auto-syncs as files change).
+- Free-text content: specs, transcripts, runbooks, architecture notes.
+- Markdown, JSON, images, file uploads.
+- Issues and pull requests.
+- Custom instructions attached to the Space itself.
 
-### 8.5 Chat Modes
+Anyone with a Copilot license can create a Space. Organization-owned Spaces can be shared with the org, with specific teams, or with named individuals. For Copilot Business and Enterprise orgs, admins enable the Spaces policy in Copilot settings.
 
-|Mode     |When to use                                                            |
-|---------|-----------------------------------------------------------------------|
-|**Ask**  |Questions, explanations, research, design discussion                   |
-|**Edit** |Targeted changes to specific known files                               |
-|**Agent**|Complex multi-file tasks — review all proposed changes before accepting|
+**Our Spaces (planned / in progress):**
 
-Agent mode can make sweeping changes. Start it on docs and low-risk repos. Review every diff. It does not know which repos are production-critical unless your instruction file tells it.
+- **Data Platform Standards** — our SQL, backup, and data platform conventions.
+- **DevSecOps COE Patterns** — CI/CD standards, security baselines, reusable workflows.
+- **Cloud Landing Zone Reference** — Azure and AWS governance patterns.
+- **Enterprise Security Standards** — published by the Enterprise Security org.
+- **ITP / Commonwealth Policy Reference** — the IT Policy catalog and Executive Order 2016-06 reference material.
+
+Use these heavily. In Chat, select the Space from the picker (or reference it inline). Answers get grounded in *our* standards instead of generic internet content.
+
+**Migration note.** If your team had older “knowledge base” content, the GitHub migration tooling released in late 2025 converted those into individual Spaces. Check the Spaces list for your org before creating new ones from scratch.
+
+### 6.4 Model Selection
+
+Copilot Chat lets you pick the model per conversation. The current roster (which evolves — check the model picker for what’s actually available to you) includes reasoning-heavy models like Claude Opus / Claude Sonnet and GPT-5.x-class models, plus faster/cheaper options like Gemini Flash.
+
+Rough guidance:
+
+- **Strongest reasoning model** — architecture, threat modeling, hairy debugging, reviewing design tradeoffs, writing ADRs, SQL query-plan analysis.
+- **Faster models** — boilerplate generation, small edits, simple refactors, commit messages.
+- **Auto** (if available) — lets Copilot pick based on the task. Fine as a default when you’re not sure.
+
+Don’t set and forget. Switch based on the task. The COE publishes a “which model when” cheat sheet in the COE repo.
+
+**For Enterprise admins:** Bring Your Own Key (BYOK) is available as a preview for Copilot Enterprise. It lets the organization supply its own API keys from Anthropic, OpenAI, Azure AI Foundry, etc. This matters for data-residency and contracting reasons (billing under an existing enterprise agreement, staying within a specific cloud boundary). Discuss before enabling.
+
+### 6.5 Chat Modes
+
+- **Ask mode** — questions and explanations. Nothing changes in your files.
+- **Edit mode** — Copilot proposes edits to files you specify. You approve each change.
+- **Agent mode** — Copilot can read, edit, and run tools across multiple steps autonomously within the session. Most powerful, most risky.
+- **Coding agent** (separate from in-editor agent mode) — assign a GitHub issue to Copilot and it works in the background, opens a PR, and pings you for review. “Mission Control” is the dashboard for managing multiple agent tasks at once. Start with low-risk repos (docs, ADRs, small refactors); establish trust before letting it touch production IaC.
+
+Start with Ask and Edit. Move to Agent once you trust the patterns in your repo. Use the Coding Agent deliberately — it’s most useful for well-scoped, self-contained issues.
+
+### 6.6 Code Review
+
+Copilot can act as a first-pass reviewer on PRs, catching the obvious stuff so human reviewers focus on architecture and judgment. Enable on low-risk repos first (docs, ADRs, runbooks) and widen based on measured signal-to-noise. The COE publishes suggested CODEOWNERS patterns for when Copilot review is sufficient versus when a human reviewer is still required.
 
 -----
 
-## 8.6 Security Scanning — Practical Reference for Every Team
+## 7. MCP — Connecting Copilot to Real Systems
 
-This section explains the scanning tools your team will encounter in CI/CD pipelines, why each one exists, and what it does or does not cover. Understanding this prevents the most common mistake: assuming one tool covers everything.
+MCP (Model Context Protocol) lets Copilot Chat talk to outside systems: GitHub, SQL Server, Azure, AWS, your CMDB, your ticketing tool. Without MCP, Copilot only sees files in your workspace. With MCP, it can query your database, check a PR status, read an Azure policy assignment — and use what it finds to answer.
 
-### Two Separate Problems, Two Tool Families
+### 7.1 How MCP Configuration Works in VS Code
 
-```
-PROBLEM 1 — SECRETS IN CODE
-─────────────────────────────────────────────────────────────────────
-What it is:  Passwords, API keys, connection strings, certificates,
-             tokens, and credentials that a developer typed or pasted
-             into a script, config file, SQL file, or IaC template.
+Two scopes:
 
-Why it matters: A SQL connection string committed to a repo —
-             even briefly, even in a feature branch — is potentially
-             exposed. GitHub history preserves it even after deletion.
-             For CJIS-scoped systems, this is an automatic finding.
+- **User-level** — your personal MCP servers (credentials go here). Open with command palette → `MCP: Open User Configuration`.
+- **Workspace-level** (`.vscode/mcp.json`) — shared with the team (no secrets). Checked into the repo.
 
-Tools:       GitHub Secret Scanning   ← always on, no workflow needed
-             Push Protection          ← blocks commits before they land
-             Gitleaks                 ← custom patterns, history scanning
+Secrets-bearing servers → user scope. Safe-to-share configurations → workspace scope, in source control.
 
-These tools scan CONTENT — every file regardless of language.
-A .ps1 file, a .sql file, a .yaml config, a .json settings file —
-all scanned. Language is irrelevant for secret detection.
+> **The #1 setup mistake.** VS Code’s `mcp.json` uses the root key `"servers"`. Claude Desktop and Cursor use `"mcpServers"`. Copying a Claude/Cursor config straight into VS Code without changing this key is the single most common MCP setup bug on our team. If your servers aren’t appearing, check this first.
 
-PROBLEM 2 — VULNERABLE CODE PATTERNS
-─────────────────────────────────────────────────────────────────────
-What it is:  Logic flaws, insecure function usage, missing error
-             handling, injection risks — vulnerabilities in how the
-             code works, not in what strings are embedded.
+### 7.2 Servers Worth Setting Up
 
-Why it matters: A PowerShell script that uses ConvertTo-SecureString
-             with plaintext, or a SQL script that builds dynamic
-             queries from unvalidated input, or an Ansible role that
-             runs commands as root when it doesn't need to.
+Priority order for most of us:
 
-Tools:       PSScriptAnalyzer  ← PowerShell specific
-             Semgrep           ← PowerShell, SQL, Terraform, YAML, more
-             Checkov / Trivy   ← IaC specific
-             CodeQL            ← C#, Python, JavaScript ONLY
+|Server                             |What It Does                                                                                                                                      |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+|**GitHub MCP** (official, remote)  |Search issues, PRs, code across our enterprise. Create issues. Read Actions runs. Hosted by GitHub at `https://api.githubcopilot.com/mcp/`.       |
+|**Azure MCP** (Microsoft, official)|Inspect resources, check policy, query Resource Graph, read costs. Published as `@azure/mcp`.                                                     |
+|**Microsoft SQL MCP**              |Query schema, run read-only queries, introspect indexes and plans. Several implementations exist (see 7.4); the COE publishes the approved choice.|
+|**AWS MCP**                        |Equivalent for AWS workloads.                                                                                                                     |
+|**Filesystem MCP**                 |Scoped access to a folder — good for a docs or ADR tree.                                                                                          |
+|**Fetch MCP**                      |Pulls web pages during a Chat — vendor docs, RFCs, etc.                                                                                           |
 
-These tools analyze CODE STRUCTURE. Language matters —
-each tool only covers the languages it was built for.
-```
-
-### What Each Tool Covers
-
-```
-TOOL              COVERS                          DOES NOT COVER
-────────────────  ──────────────────────────────  ──────────────────────
-GitHub Secret     Every file type and language.   Nothing — it scans all.
-Scanning          Built into GitHub. Always on.
-
-Push Protection   Blocks at commit time. Every    Cannot catch patterns
-                  file type.                      it doesn't recognize
-                                                  (use Gitleaks for custom).
-
-Gitleaks          Every file type. Custom regex   Requires workflow setup.
-                  patterns. Git history scan.     Not on by default.
-
-PSScriptAnalyzer  .ps1  .psm1  .psd1             All other languages.
-                  Security rules, credential
-                  patterns, deprecated cmdlets.
-
-Semgrep           PowerShell, SQL, Terraform,     Deep semantic analysis
-                  Bicep, Ansible, YAML, Python,   (use CodeQL for that on
-                  JS, Go, and more via rules.     supported languages).
-
-Checkov           Terraform, Bicep,               Runtime app code.
-                  CloudFormation, Ansible,
-                  Salt, Kubernetes, ARM.
-
-Trivy             Containers, file systems,        Deep code analysis.
-                  Terraform, Kubernetes.
-
-cfn-guard         CloudFormation (AWS) only.       Everything else.
-
-CodeQL            C#, Java, JavaScript,           PowerShell ✗
-                  TypeScript, Python, Go,          T-SQL ✗
-                  Ruby, Swift.                     Terraform ✗
-                                                   Bicep ✗
-                                                   Ansible ✗
-                                                   Salt ✗
-```
-
-**Rule for this team:** CodeQL runs only on repos that contain C#, Python, or JavaScript — primarily Enterprise Development repos. It does not run on PowerShell, SQL, IaC, or configuration repos because it produces no findings for those file types. Running it is not harmful, but it creates false confidence that code has been scanned when it has not.
-
-### How Findings Reach the Security Tab
-
-Every scanner outputs **SARIF** (Static Analysis Results Interchange Format — a standard JSON schema for security findings). The GitHub Actions workflow uploads the SARIF file after the scan. All findings from all tools appear in the GitHub Security tab and in the org-wide Security Overview that Enterprise Security monitors.
-
-```
-WHAT YOUR PR PIPELINE RUNS
-(selected based on repo content)
-
-All repos:
-  ├── GitHub Secret Scanning     (native, always on)
-  ├── Push Protection            (native, always on)
-  └── Gitleaks                   (custom patterns, SARIF upload)
-
-Repos with .ps1 / .psm1:
-  └── PSScriptAnalyzer           (SARIF upload)
-
-Repos with any code (PS, SQL, YAML, etc.):
-  └── Semgrep                    (community + custom rules, SARIF upload)
-
-Repos with Terraform / Bicep / CloudFormation / Ansible / Salt:
-  └── Checkov                    (SARIF upload)
-  └── Trivy                      (SARIF upload)
-
-Repos with CloudFormation (AWS):
-  └── cfn-guard                  (policy gates, SARIF upload)
-
-Repos with C# / Python / JavaScript (Enterprise Dev only):
-  └── CodeQL                     (SARIF upload)
-
-All findings → GitHub Security tab → Security Overview → SIEM
-```
-
-### What PSScriptAnalyzer Catches in PowerShell
-
-PSScriptAnalyzer has dedicated security rules. The most important for our environment:
-
-|Rule                                            |What it catches                                                        |
-|------------------------------------------------|-----------------------------------------------------------------------|
-|`PSAvoidUsingPlainTextForPassword`              |Parameters named `Password` accepting plain strings                    |
-|`PSAvoidUsingConvertToSecureStringWithPlainText`|`ConvertTo-SecureString -AsPlainText` usage                            |
-|`PSAvoidUsingUsernameAndPasswordParams`         |Functions accepting both `-Username` and `-Password`                   |
-|`PSAvoidUsingWriteHost`                         |`Write-Host` (output bypasses pipeline, hard to suppress in automation)|
-|`PSUseDeclaredVarsMoreThanAssignments`          |Variables assigned but never used (often a logic error)                |
-|`PSAvoidUsingInvokeExpression`                  |`Invoke-Expression` (executes arbitrary strings — injection risk)      |
-|`PSAvoidUsingCmdletAliases`                     |`ls`, `cat`, `curl` — aliases that break cross-platform compatibility  |
-|`PSUseApprovedVerbs`                            |Non-standard verb-noun naming                                          |
-
-Run PSScriptAnalyzer locally before pushing:
-
-```powershell
-# Install if not present
-Install-Module -Name PSScriptAnalyzer -Scope CurrentUser
-
-# Scan a single file
-Invoke-ScriptAnalyzer -Path ./scripts/Export-TableData.ps1 -Severity Warning,Error
-
-# Scan all PS files in a directory
-Invoke-ScriptAnalyzer -Path ./scripts/ -Recurse -Severity Warning,Error
-
-# Include security rules specifically
-Invoke-ScriptAnalyzer -Path ./scripts/ -Settings PSGallery
-```
-
-### What Semgrep Adds for SQL and PowerShell
-
-Semgrep uses pattern-matching rules rather than deep semantic analysis. The community registry includes rules for:
-
-- PowerShell: hardcoded credentials, unsafe invocations, `Invoke-Expression` with dynamic content
-- SQL: dynamic query construction that could enable injection, `NOLOCK` patterns, `SELECT *`
-- Terraform: hardcoded secrets in resource definitions, overly permissive security groups
-- Ansible: `shell` module usage where a built-in module exists, `no_log: false` on sensitive tasks
-
-Custom rules for our environment (maintained in the COE repo):
-
-- Flag SQL connection strings embedded anywhere in PowerShell
-- Flag hardcoded server names that match our production naming conventions
-- Flag `$env:` variable reads for known secret variable names
-
-### Adding Scanners to a Workflow
-
-Minimal working example for a PowerShell repo:
-
-```yaml
-name: Security Scan
-on: [pull_request]
-
-jobs:
-  secret-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0          # Full history for Gitleaks
-
-      - name: Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  code-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: PSScriptAnalyzer
-        shell: pwsh
-        run: |
-          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
-          $results = Invoke-ScriptAnalyzer -Path . -Recurse `
-            -Severity Warning,Error -ReportSummary
-          if ($results | Where-Object Severity -eq 'Error') {
-            Write-Error "PSScriptAnalyzer found errors"
-            exit 1
-          }
-
-      - name: Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/powershell
-            p/secrets
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-```
-
-Our shared reusable workflows already include these steps. In most repos, you call the reusable workflow rather than writing this from scratch:
-
-```yaml
-# In your repo's .github/workflows/security-scan.yml:
-name: Security Scan
-on: [pull_request]
-
-jobs:
-  scan:
-    uses: managed-services/.github/.github/workflows/security-scan-baseline.yml@v2
-    secrets: inherit
-```
-
------
-
-## 9. Extensions by Role
-
-### Core Set — Every Profile (§4.3)
-
-Already listed above. Install these first in every profile.
-
-### SQL & Data Platform Profile
-
-|Extension            |ID                                     |What it does                                        |
-|---------------------|---------------------------------------|----------------------------------------------------|
-|SQL Server (mssql)   |`ms-mssql.mssql`                       |Query editor, schema browser, SQL Server connections|
-|SQL Database Projects|`ms-mssql.sql-database-projects-vscode`|SSDT-style projects, DACPAC build and deploy        |
-|Data Workspace       |`ms-mssql.data-workspace-vscode`       |Manages multiple database project connections       |
-|Kusto / KQL          |`ms-vscode.vscode-kusto`               |KQL query language for Azure Monitor, ADX           |
-|DBeaver Integration  |—                                      |Use DBeaver standalone (not a VS Code extension)    |
-|SQL Formatter        |`inferrinizzard.prettier-sql-vscode`   |SQL formatting on save                              |
-|dbt Power User       |`innoverio.vscode-dbt-power-user`      |dbt (data build tool) development support           |
-
-**Note:** Azure Data Studio was retired. The `ms-mssql.mssql` extension in VS Code is the direct successor — maintained by the same Microsoft team.
-
-### Cloud & IaC Profile (Azure + AWS)
-
-|Extension            |ID                                           |What it does                                     |
-|---------------------|---------------------------------------------|-------------------------------------------------|
-|Azure Account        |`ms-vscode.azure-account`                    |Azure sign-in, required by other Azure extensions|
-|Azure Resources      |`ms-azuretools.vscode-azureresourcegroups`   |Browse Azure resources                           |
-|Bicep                |`ms-azuretools.vscode-bicep`                 |Bicep language support, validation, what-if      |
-|HashiCorp Terraform  |`hashicorp.terraform`                        |Terraform HCL language support                   |
-|AWS Toolkit          |`amazonwebservices.aws-toolkit-vscode`       |AWS resource browser, CloudFormation support     |
-|Kubernetes           |`ms-kubernetes-tools.vscode-kubernetes-tools`|K8s cluster management                           |
-|Docker               |`ms-azuretools.vscode-docker`                |Container image management                       |
-|YAML (Red Hat)       |`redhat.vscode-yaml`                         |YAML validation with schema support              |
-|CloudFormation Linter|`kddejong.vscode-cfn-lint`                   |Validates CloudFormation templates               |
-
-**YAML schema associations** (add to `settings.json`):
+### 7.3 Example `.vscode/mcp.json` for the Data Platform Workspace
 
 ```json
-"yaml.schemas": {
-  "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml",
-  "https://json.schemastore.org/ansible-playbook.json": "**/playbooks/*.yml",
-  "https://raw.githubusercontent.com/awslabs/goformation/master/schema/cloudformation.schema.json":
-    "**/cloudformation/**/*.yaml"
-}
-```
-
-### On-Prem Platform Profile (VMware, Ansible, Salt)
-
-|Extension          |ID                           |What it does                                                    |
-|-------------------|-----------------------------|----------------------------------------------------------------|
-|Ansible            |`redhat.ansible`             |Ansible playbook/role language support, ansible-lint integration|
-|YAML (Red Hat)     |`redhat.vscode-yaml`         |YAML validation (Ansible is YAML-based)                         |
-|Jinja              |`wholroyd.jinja`             |Jinja2 template syntax highlighting (used in Ansible and Salt)  |
-|HashiCorp Terraform|`hashicorp.terraform`        |Terraform for VMware vSphere/NSX providers                      |
-|SaltStack          |`korekontrol.saltstack`      |Salt state file (.sls) syntax highlighting                      |
-|Python             |`ms-python.python`           |Python support (Salt and Ansible use Python under the hood)     |
-|Remote - SSH       |`ms-vscode-remote.remote-ssh`|Connect to VMware-hosted Linux nodes                            |
-
-**Ansible extension setup:**
-
-```json
-// In .vscode/settings.json for Ansible repos:
 {
-  "ansible.ansible.path": "/home/your_user/.local/bin/ansible",
-  "ansible.validation.lint.enabled": true,
-  "ansible.validation.lint.path": "/home/your_user/.local/bin/ansible-lint"
+  "inputs": [
+    { "id": "sql-conn", "type": "promptString", "description": "Dev SQL conn string", "password": true }
+  ],
+  "servers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "X-MCP-Readonly": "true"
+      }
+    },
+    "azure": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start"]
+    },
+    "mssql-dev": {
+      "command": "npx",
+      "args": ["-y", "<approved-mssql-mcp-package>"],
+      "env": {
+        "MSSQL_CONNECTION_STRING": "${input:sql-conn}",
+        "MSSQL_READONLY": "true"
+      }
+    },
+    "filesystem-adrs": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}/adrs"]
+    }
+  }
 }
 ```
 
-### PowerShell & Automation Profile
+VS Code prompts for the connection string the first time and remembers it for the session.
 
-|Extension           |ID                    |What it does                                              |
-|--------------------|----------------------|----------------------------------------------------------|
-|PowerShell          |`ms-vscode.powershell`|Language support, debugging, PSScriptAnalyzer             |
-|Pester Test Explorer|`pspester.pester-test`|Run and visualize Pester (PowerShell test framework) tests|
+> **Why `<approved-mssql-mcp-package>` instead of a concrete package name?** There are several community-maintained SQL Server MCP servers and no single “official Microsoft” one published under a canonical npm name at this time. The COE maintains the approved choice in the Approved MCP Registry — pin to that value. Don’t blind-install from npm search results.
 
-### Identity & Access (IAM) Profile
+### 7.4 A Note on GitHub MCP Options
 
-|Extension          |ID                           |What it does                                   |
-|-------------------|-----------------------------|-----------------------------------------------|
-|Azure Account      |`ms-vscode.azure-account`    |Azure/Entra ID connectivity                    |
-|Azure AD / Entra   |via Azure Resources extension|Entra ID management                            |
-|HashiCorp Terraform|`hashicorp.terraform`        |IaC for IAM policy as code                     |
-|YAML (Red Hat)     |`redhat.vscode-yaml`         |Policy files often YAML-based                  |
-|REST Client        |`humao.rest-client`          |Test Microsoft Graph API and identity endpoints|
+The remote GitHub MCP server (hosted by GitHub) is the easiest path — no install, OAuth handles auth. For environments where remote hosting isn’t acceptable, a local version (Docker image `ghcr.io/github/github-mcp-server`) is also available. Useful flags:
 
-### DevSecOps Profile
+- `--read-only` (or header `X-MCP-Readonly: true`) — read-only tools only.
+- `--dynamic-toolsets` (or `X-MCP-Toolsets`) — enables toolset selection on demand, reducing tool-count noise in the model context.
 
-|Extension           |ID                                        |What it does                                                                        |
-|--------------------|------------------------------------------|------------------------------------------------------------------------------------|
-|GitHub Actions      |`github.vscode-github-actions`            |Workflow editing, run history, inline log viewing                                   |
-|GitHub Pull Requests|`github.vscode-pull-request-github`       |Review and merge PRs without leaving VS Code                                        |
-|Checkov             |`bridgecrew.checkov`                      |IaC security scanner — inline findings for Terraform, Bicep, CloudFormation, Ansible|
-|Snyk                |`snyk-security.snyk-vulnerability-scanner`|Vulnerability scanning for code, containers, dependencies, IaC                      |
-|Open Policy Agent   |`tsandall.opa`                            |OPA/Rego policy language support for cfn-guard and Sentinel rules                   |
-|PowerShell          |`ms-vscode.powershell`                    |Runs PSScriptAnalyzer inline — security findings appear as you type in `.ps1` files |
-|Dev Containers      |`ms-vscode-remote.remote-containers`      |Reproducible containerized dev environments                                         |
-|YAML (Red Hat)      |`redhat.vscode-yaml`                      |GitHub Actions workflow validation and schema support                               |
+### 7.5 Safety Rules (Non-Negotiable)
 
-**Notes on the DevSecOps profile:**
+- **Start read-only.** Every SQL, Azure, AWS, or GitHub MCP server should start in read-only mode. Elevate only when you need writes, and document why in an ADR or PR.
+- **Non-production targets first.** Dev databases, sandbox subscriptions, scratch AWS accounts.
+- **No shared tokens.** Use your own credentials; never check them into a repo. Use VS Code’s `inputs` prompt pattern (shown above) or user-scope configuration for anything sensitive.
+- **Check the approved registry.** Our enterprise maintains a list of approved MCP servers. If the server you want isn’t there, ask the COE before using it on sensitive targets.
+- **Prefer remote MCP servers with SSO over local servers with static tokens** for any target that touches regulated data (CJIS, PHI, PII, etc.).
 
-The PowerShell extension is listed here as well as in the PowerShell profile because PSScriptAnalyzer runs as part of it — giving inline security findings in `.ps1` files as you type, before the pipeline runs. If you are doing security review work on PowerShell scripts, install this extension in the DevSecOps profile too.
+### 7.6 Reviewing Tools
 
-Semgrep does not have a first-class VS Code extension for inline scanning; it runs in CI/CD. For local pre-push scanning, run it from the terminal:
-
-```bash
-# From WSL, scan current directory with PowerShell rules
-semgrep --config=p/powershell .
-
-# Scan with secrets rules
-semgrep --config=p/secrets .
-```
-
-Gitleaks also runs from the terminal for local history scanning:
-
-```bash
-# Scan current repo for secrets (including history)
-gitleaks detect --source . --verbose
-```
-
-### Docs & Architecture Profile
-
-|Extension          |ID                              |What it does                        |
-|-------------------|--------------------------------|------------------------------------|
-|Markdown All in One|`yzhang.markdown-all-in-one`    |Preview, shortcuts, table formatting|
-|markdownlint       |`davidanson.vscode-markdownlint`|Consistent Markdown style           |
-|Mermaid Preview    |`bierner.markdown-mermaid`      |Renders Mermaid diagrams inline     |
-|Draw.io Integration|`hediet.vscode-drawio`          |Edit `.drawio` diagrams in VS Code  |
-|PlantUML           |`jebbs.plantuml`                |Sequence, class, deployment diagrams|
-|Excalidraw         |`pomdtr.excalidraw-editor`      |Whiteboard-style diagrams           |
-|Paste Image        |`mushan.vscode-paste-image`     |Paste clipboard images into Markdown|
+For each MCP server, VS Code shows the individual tools it exposes. You can enable or disable tools per server. Default to enabling only what you need.
 
 -----
 
-## 10. Teams and Permissions Setup
+## 8. Extensions by Role
 
-This section walks through how to set up GitHub teams correctly for the ETS org. Our org is the reference model for other orgs and teams to follow.
+Keep each profile lean. **Core-everywhere** extensions are already listed in section 4.2. Below is what goes into each domain profile.
 
-### 10.1 Create Teams in GitHub
+### SQL & Data Platform
 
-`Your org → Settings → Teams → New team`
+- `ms-mssql.mssql` (primary SQL tool)
+- SQL Database Projects
+- Data Workspace
+- Kusto (if you work with ADX or Log Analytics)
+- dbt Power User (if dbt is in scope)
+- Database Client (Weijan Chen) — secondary visual client
+- SQL Formatter
 
-```
-Teams to create in the ETS org:
+### Cloud & IaC
 
-ets-admins
-  Description: Org administrators — emergency access and org config
-  Privacy: Secret (not visible to external contributors)
-  Members: Named individuals only (max 3). Not a group account.
+- Azure Account, Azure Resources, Azure Resource Manager Tools
+- Bicep
+- Azure Policy
+- HashiCorp Terraform
+- AWS Toolkit
+- Kubernetes
+- Docker
+- YAML (Red Hat) — configure schemas for GitHub Actions, Azure Pipelines, k8s
 
-ets-platform
-  Description: Platform engineering — cloud and on-prem infrastructure
-  Privacy: Visible
-  Parent team: none
+### PowerShell & Automation
 
-ets-data
-  Description: Data platform and DBA team
-  Privacy: Visible
-  Parent team: none
-  Child teams to create:
-    ets-data-dba     (SQL Server DBAs)
-    ets-data-eng     (Data engineers / pipeline builders)
+- PowerShell (Microsoft)
+- Pester Test Explorer
 
-ets-iam
-  Description: Identity and Access Management
-  Privacy: Visible
+### DevSecOps
 
-ets-secops
-  Description: Security Operations
-  Privacy: Visible
+- GitHub Actions
+- GitHub Pull Requests
+- GitHub Repositories
+- Snyk
+- Checkov
+- Trivy
+- Open Policy Agent
+- Dev Containers
 
-ets-networking
-  Description: Networking and Firewall
-  Privacy: Visible
+### Docs & Architecture
 
-ets-backup
-  Description: Backup and Disaster Recovery
-  Privacy: Visible
+- Markdown All in One
+- markdownlint
+- Mermaid Preview
+- Draw.io Integration (hediet.vscode-drawio)
+- PlantUML
+- Excalidraw
+- Paste Image
 
-ets-automation
-  Description: Build, ordering, and automation
-  Privacy: Visible
-
-ets-devsecops-coe
-  Description: DevSecOps Center of Excellence participants
-  Privacy: Visible
-  Note: Cross-functional; members from multiple above teams
-```
-
-### 10.2 Assign Repo Access
-
-For each repo, access is assigned at the team level (not per-person). Go to `Repo → Settings → Collaborators and teams → Add a team`.
-
-```
-REPO ACCESS ASSIGNMENT REFERENCE
-
-sql-backup-automation:
-  @ets-data           → Maintain
-  @ets-platform       → Write
-  @ets-backup         → Write
-  @ets-secops         → Triage
-  @ets-devsecops-coe  → Write
-
-landing-zone-azure:
-  @ets-platform       → Maintain
-  @ets-iam            → Write
-  @ets-secops         → Triage
-  @ets-devsecops-coe  → Write
-
-iam-policy:
-  @ets-iam            → Maintain
-  @ets-secops         → Write
-  @ets-platform       → Read
-
-reusable-workflows (shared CI/CD):
-  @ets-devsecops-coe  → Maintain
-  @ets-secops         → Write
-  All other teams     → Read (inner source consumption)
-
-coe-decisions (ADR repo):
-  @ets-devsecops-coe  → Maintain
-  All other teams     → Read (with PR submission rights)
-```
-
-### 10.3 Set Up CODEOWNERS in Every Repo
-
-```
-# .github/CODEOWNERS template for a data platform repo
-
-# Default — DBA team reviews everything not otherwise specified
-*                       @ets-data/dba-team
-
-# Workflows — security and COE review
-/.github/workflows/     @ets-secops @ets-devsecops-coe
-
-# Infrastructure — platform team reviews
-/infra/                 @ets-platform @ets-data/dba-team
-
-# IAM / service accounts — IAM team reviews
-/iam/                   @ets-iam
-/service-accounts/      @ets-iam @ets-data/dba-team
-
-# Architecture decisions — COE reviews
-/adrs/                  @ets-devsecops-coe
-
-# Security policy
-SECURITY.md             @ets-secops
-```
-
-### 10.4 Org-Level Settings to Configure
-
-In `Your org → Settings`:
-
-- **Member privileges → Base permissions:** Read (members can read all repos; write access granted per team/repo)
-- **Member privileges → Repository creation:** Disabled for org members (repos created via templates by team leads or admins)
-- **Actions → General:** Allow all actions and reusable workflows from GitHub and our trusted set
-- **Security → Secret scanning:** Enabled; push protection on
-- **Code security and analysis → Dependabot:** Enabled for all repos
-- **Copilot:** Configured at enterprise level (see strategy doc §9)
-
-### 10.5 Quarterly Access Review
-
-Every quarter, a team lead and an IAM team member review:
-
-- Who holds org owner (`ets-admins` membership)
-- Whether team membership reflects current staffing
-- Whether repo access levels still match team responsibilities
-- Whether any individual access (outside team grants) exists and is still justified
-
-Record findings and any changes in an ADR. This is the audit trail that satisfies SoD requirements.
+**Prune ruthlessly.** Every installed extension is context Copilot wades through and startup time you pay.
 
 -----
 
-## 11. Settings and Repo Scaffolding
+## 9. Settings and Repo Scaffolding
 
-### 11.1 User `settings.json`
+### 9.1 User `settings.json`
 
-`Ctrl+Shift+P` → “Preferences: Open User Settings (JSON)”:
+Open the command palette (`Ctrl+Shift+P`) → “Preferences: Open User Settings (JSON)”:
 
 ```json
 {
@@ -1359,50 +543,23 @@ Record findings and any changes in an ADR. This is the audit trail that satisfie
   "git.autofetch": true,
   "git.confirmSync": false,
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
-  "github.copilot.chat.agent.thinkingTool": true,
-  "chat.mcp.enabled": true,
-  "redhat.telemetry.enabled": false,
-  "yaml.schemas": {
-    "https://json.schemastore.org/github-workflow.json":
-      ".github/workflows/*.yml",
-    "https://json.schemastore.org/ansible-playbook.json":
-      "**/playbooks/*.yml"
-  }
+  "chat.mcp.enabled": true
 }
 ```
 
-### 11.2 Per-Repo `.gitattributes`
+The `files.eol` setting matters. Mixed line endings have caused real bugs on our team (StreamWriter encoding, BCP output). Enforce `\n` universally.
 
-```gitattributes
-# Normalize all text files to LF on commit
+### 9.2 Per-Repo `.gitattributes`
+
+```
 * text=auto eol=lf
-
-# Windows tools that need CRLF
 *.ps1 text eol=crlf
-*.psm1 text eol=crlf
-*.psd1 text eol=crlf
 *.sql text eol=crlf
-*.bat text eol=crlf
-*.cmd text eol=crlf
-
-# Binary — never touch
-*.png binary
-*.jpg binary
-*.zip binary
-*.7z binary
-*.dacpac binary
-*.bacpac binary
-*.pfx binary
 ```
 
-After adding `.gitattributes`:
+This prevents line-ending churn in PRs. PowerShell and T-SQL tooling on Windows genuinely prefers CRLF; everything else is LF.
 
-```bash
-git add --renormalize .
-git commit -m "Normalize line endings"
-```
-
-### 11.3 Per-Repo `.editorconfig`
+### 9.3 Per-Repo `.editorconfig`
 
 ```ini
 root = true
@@ -1420,411 +577,193 @@ trim_trailing_whitespace = false
 
 [*.{yml,yaml,json}]
 indent_size = 2
-
-[*.{ps1,psm1,psd1}]
-indent_size = 4
-end_of_line = crlf
-
-[*.sql]
-indent_size = 4
-end_of_line = crlf
-
-[*.{tf,tfvars}]
-indent_size = 2
-
-[*.sls]
-indent_size = 2
 ```
+
+### 9.4 Recommended Repo Scaffold
+
+For every new repo:
+
+```
+.github/
+  copilot-instructions.md
+  CODEOWNERS
+  pull_request_template.md
+  workflows/
+    ci.yml
+    codeql.yml
+  prompts/
+    review-tsql.prompt.md
+    harden-powershell.prompt.md
+.vscode/
+  settings.json
+  extensions.json
+  mcp.json
+.editorconfig
+.gitattributes
+.gitignore
+README.md
+SECURITY.md
+adrs/
+  0001-record-architecture-decisions.md
+```
+
+Our org publishes repo templates with this scaffold pre-wired. Use those instead of copying manually.
 
 -----
 
-## 12. Day-in-the-Life Examples
+## 10. Day-in-the-Life Examples
 
-### 12.1 Cross-Team: Data Platform + IAM + Platform
+### 10.1 Fixing a Bug in the Backup Script
 
-```
-Situation: Provisioning a new SQL Server instance on VMware,
-integrating with the gMSA provisioned by IAM,
-using the landing zone networking configured by Platform.
+1. Open `data-platform.code-workspace`.
+1. VS Code offers to switch to the SQL & Data Platform profile. Accept.
+1. Recommended extensions prompt. Install if missing.
+1. Copilot Chat opens with the repo’s instruction file already loaded.
+1. Attach the **Data Platform Standards** Space for grounding.
+1. Ask: “`@workspace` why is the BCP call returning NativeCommandError on rows with embedded quotes?”
+1. Copilot answers grounded in the repo’s conventions and our Space, not a generic Stack Overflow thread.
 
-1. Open data-platform-partnership.code-workspace
-   All five repos visible (SQL automation, landing zone, IAM policy,
-   VMware IaC, shared PS modules)
+### 10.2 Reviewing a Control Mapping
 
-2. VMware Aria MCP running. Platform team's Terraform state visible.
-   IAM MCP running. Service account inventory accessible.
+1. Open `cloud-governance.code-workspace`.
+1. Switch to the Cloud & IaC profile.
+1. Azure MCP is running. Ask Chat: “For each row in the mapping matrix, verify the listed Azure Policy definition actually exists in our tenant.”
+1. Copilot queries Azure via MCP, reports findings.
+1. Edit mode applies corrections to the matrix.
 
-3. Ask: "@workspace — what network segment is configured for SQL
-   servers in the VMware landing zone, and does IAM have a gMSA
-   for the backup automation service in that segment?"
+### 10.3 Drafting a COE Policy
 
-4. Copilot answers by reading:
-   - VMware IaC repo (networking config)
-   - IAM policy repo (gMSA definitions)
-   And gives a specific answer: yes, here is the gMSA and
-   the network segment it's scoped to.
+1. Open `devsecops-coe.code-workspace`.
+1. Switch to the Docs & Architecture profile.
+1. In Chat, attach the **DevSecOps COE Patterns** Space. Ask: “Draft a standard for signed commits on repos with `compliance-scope = cjis`.”
+1. Answer is grounded in our existing standards.
+1. Run `/generate-adr` prompt to format as ADR-nnnn.
 
-5. You draft the Terraform change for the SQL VM using
-   the platform's module — Copilot generates it following
-   the instruction file conventions, with the correct tags.
+### 10.4 Delegating an Issue to the Coding Agent
 
-6. PR opened. CODEOWNERS auto-requests:
-   - @ets-data/dba-team (SQL config)
-   - @ets-platform (VMware/Terraform)
-   - @ets-iam (service account used)
-```
-
-### 12.2 On-Prem Ansible Hardening Run
-
-```
-Situation: Applying CIS RHEL 9 baseline to a new batch of VMs
-provisioned by Aria Automation.
-
-1. Open on-prem-platform workspace
-   Ansible role repo and VMware IaC repo both visible.
-
-2. Use /review-ansible prompt on the cis-baseline role:
-   Chat: "/review-ansible"
-   Select the role's main task file.
-   Copilot reviews for idempotency, FQCN, hardcoded values.
-
-3. Fix issues, push to feature branch, PR opened.
-   ansible-lint runs in CI (WSL-based self-hosted runner).
-   Checkov scans for IaC security issues.
-
-4. Merge to main. Pipeline calls Ansible Navigator
-   via the self-hosted runner, applies the role to
-   the new VM group via Aria Automation webhook.
-```
-
-### 12.3 Agency Cloud Deployment
-
-```
-Situation: An agency team is deploying a new application
-to their AWS account using the agency self-service process.
-
-1. Agency team opens their repo (from tpl-terraform-aws-module)
-   pre-configured with guardrail workflows.
-
-2. They write their Terraform, extending the base module.
-   Their PR triggers:
-   - terraform validate + fmt
-   - tflint (AWS rules)
-   - Checkov security scan
-   - Tag validation: all required tags present?
-   - Template compliance: required security groups intact?
-
-3. Any failure blocks the PR with specific guidance.
-   Agency team fixes and re-pushes.
-
-4. PASS: terraform plan posted as PR comment.
-   Agency tech lead reviews the plan and approves.
-   Our platform team is auto-requested on networking changes.
-
-5. Merge to main → deployment pipeline runs automatically
-   for dev/test environments.
-
-6. To promote to production: agency tech lead opens a separate
-   PR from test state to production. Requires:
-   - 2 approvals (agency lead + platform on-call)
-   - Deployment window check (only Tue/Thu 10am-2pm)
-   - Evidence package generated automatically on completion.
-```
+1. In GitHub, pick a low-risk issue (a doc typo, a small refactor, a missing test).
+1. Assign it to Copilot. Make sure the issue description has enough context — the agent’s only input is what’s written there plus the repo.
+1. Check Mission Control for progress.
+1. When the PR opens, review it like any other contribution. Leave feedback if needed; the agent can iterate.
+1. Merge on success.
 
 -----
 
-## 13. Troubleshooting
+## 11. Troubleshooting and Gotchas
 
-### 13.1 Copilot Suggestions Feel Generic
+### 11.1 Copilot Suggestions Feel Generic
 
-1. Does `.github/copilot-instructions.md` exist and have content?
-1. Is `"github.copilot.chat.codeGeneration.useInstructionFiles": true` in settings?
-1. If asking about multiple repos, are they all in a workspace?
-1. Verify: In Chat, ask “What instructions do you have for this repo?”
+Check:
 
-### 13.2 `@workspace` Gives Weak Answers
+- Does the repo have a `.github/copilot-instructions.md`?
+- Is `github.copilot.chat.codeGeneration.useInstructionFiles` set to `true`?
+- Are you in a multi-root workspace if the question spans repos?
+- Have you attached a Space for broader grounding?
 
-- Confirm all repos are in the Folders list (left panel).
-- First-open indexing takes a few minutes on large repos. Wait and retry.
-- Check `files.exclude` — don’t exclude source files by accident.
+### 11.2 Copilot Can’t See the Repo
 
-### 13.3 Ansible Extension Won’t Run lint
+If `@workspace` gives weak answers:
 
-- Verify `ansible-lint` is installed in WSL: `ansible-lint --version`
-- Confirm the extension setting `ansible.validation.lint.path` points to the correct path.
-- The extension runs in WSL context for WSL-opened repos. Open the folder via Remote - WSL (`code .` from inside the Ubuntu terminal).
+- Confirm the repo is actually added to your workspace (check the left-pane folder list).
+- Large repos take time to index on first open. Wait a few minutes.
+- For very large monorepos, the inline-completion context window is limited. Consider a Space over selected folders as a complement.
 
-### 13.4 Terraform Plan Fails on VMware Provider
+### 11.3 MCP Server Won’t Start
 
-- VMware vSphere provider requires GOVC-compatible network access.
-- For on-prem: use self-hosted runner (labeled `[self-hosted, vmware]`).
-- GitHub-hosted runners cannot reach your internal vCenter.
+- Check the Output panel → MCP (or use the “show output” link in the Chat error banner) for error messages.
+- Confirm the command (`npx`, `node`, `uvx`, etc.) is in PATH in the environment VS Code launched it from.
+- Most MCP servers need Node 20+ or Python 3.11+.
+- Root key mismatch: remember, VS Code uses `"servers"`, not `"mcpServers"`.
+- If changes to `mcp.json` don’t take effect, reload the window (`Developer: Reload Window`).
 
-### 13.5 MCP Server Won’t Start
+### 11.4 Git Credential Manager Picks the Wrong Account
 
-- View → Output → MCP. Read the error message.
-- `npx` not found: Node.js not installed or not in PATH.
-- Most servers need Node 18+ LTS. In WSL: `nvm install --lts && nvm use --lts`.
+- Check `git config --global --list | grep credential`.
+- Clear credentials: `git credential-manager erase` then `https://github.com` + Enter twice.
+- Re-clone a repo and let it prompt for the right account.
 
-### 13.6 Git Uses Wrong Account
+### 11.5 Extensions Slow Down Startup
 
-```powershell
-# Check current credential config
-git config --global --list | Select-String credential
+- Command palette → “Developer: Show Running Extensions” shows load times.
+- Move heavy extensions out of the Default profile into a domain profile.
 
-# Clear and re-authenticate
-git credential-manager erase
-# Type: https://github.com
-# Press Enter twice
+### 11.6 Line-Ending Warnings on Every Commit
 
-# Re-clone — it will prompt for the EMU account
-```
+Section 9.2. Add `.gitattributes`. Commit it. Run `git add --renormalize .` to re-normalize the working tree.
 
-### 13.7 Azure Data Studio Opens from Old Shortcut
+### 11.7 Premium Request Quota Warnings
 
-Azure Data Studio has been retired. Uninstall it (`winget uninstall --id Microsoft.AzureDataStudio`). Use:
+If Chat starts warning about quota:
 
-- VS Code + mssql extension for query development
-- SSMS for advanced DBA administration
-- DBeaver Community for multi-database browsing
-
-### 13.8 Line Endings Change on Every Commit
-
-Add `.gitattributes` (§11.2). Then re-normalize:
-
-```bash
-git add --renormalize .
-git commit -m "Normalize line endings per .gitattributes"
-```
-
-### 13.9 Security Scan Says Zero Findings — But the Repo Has PowerShell or SQL
-
-Zero findings almost always means the wrong scanner ran, not that the code is clean.
-
-**Check which scanner ran:** Open the Actions run, expand the security scan job, look at which tool executed and which files it reported scanning.
-
-**If CodeQL ran on a PowerShell or SQL repo:** CodeQL skips those file types silently and reports success. This is not the correct scanner. The repo should use PSScriptAnalyzer and Semgrep instead. Check whether the workflow was copied from an Enterprise Development template rather than from the correct PowerShell or data platform template.
-
-**If no scanner ran at all:** Check that the security scan workflow exists in `.github/workflows/` and that it is triggered on `pull_request`. New repos created from our templates have this pre-configured. Repos that predate the templates need the workflow added manually.
-
-**If Gitleaks ran but found nothing unusual:** That is expected when the repo is clean. Gitleaks only flags known credential patterns — it will not flag every string. To test it works, check the Actions log for “X commits scanned” output. If you see that line, the scan ran correctly.
-
-### 13.10 PSScriptAnalyzer Passes in the Pipeline but Flags Issues Locally (or Vice Versa)
-
-The pipeline and your local VS Code may be using different rule sets or PSScriptAnalyzer versions.
-
-```powershell
-# Check local version
-Get-Module PSScriptAnalyzer -ListAvailable | Select Version
-
-# Update to latest
-Update-Module PSScriptAnalyzer
-```
-
-The pipeline uses the version specified in the workflow. If they diverge, pin the pipeline to the same version you are using locally, or always update to the latest on both sides.
-
-### 13.11 Push Protection Blocked My Commit — But It’s Not a Real Secret
-
-Push protection uses pattern matching. It occasionally flags things that look like credentials but are not (a placeholder like `Password=example123` in a test fixture, for example).
-
-**If it is a false positive:**
-
-1. GitHub shows you the exact string it matched and which pattern triggered it
-1. You can request a bypass through the GitHub UI (this creates an audit log entry — it is not invisible)
-1. The bypass is logged and will appear in the compliance dashboard
-
-**If it is a real secret that got into the code by mistake:**
-
-1. Do not bypass — fix the code first
-1. Remove the credential from the code
-1. Rotate the credential immediately (assume it is compromised)
-1. Commit the fix, then push
-
-If the secret was already pushed to any branch at any point, rotating it is required regardless of whether the branch was merged. Git history preserves it.
+- Check the Copilot usage page for current consumption.
+- Switch to a faster model for routine questions; reserve the strongest reasoning model for hard problems.
+- Agent-mode and coding-agent sessions consume more per interaction than Ask-mode questions — budget accordingly.
 
 -----
 
-## 14. Glossary
+## 12. Glossary — Plain Language
 
-**ADR (Architecture Decision Record).** A document recording one decision. Numbered, immutable once accepted.
+**ADR.** A short document recording one architecture decision. Numbered. Immutable once accepted.
 
-**Agentless.** A configuration management approach (like Ansible) that connects to target nodes over SSH/WinRM — no agent software needs to be installed on managed nodes.
+**Agent mode.** Copilot Chat mode where it can read, edit, and run tools across multiple steps within the editor session.
 
-**Ansible.** Agentless configuration management and deployment tool. Uses YAML playbooks. Runs via SSH or WinRM.
+**CODEOWNERS.** File that lists who reviews changes to specific paths. Auto-requests them on PRs.
 
-**Aria Automation.** VMware Broadcom’s self-service infrastructure portal (formerly vRealize Automation / vRA). Manages on-premises blueprints and post-provisioning configuration orchestration.
+**Coding Agent.** Copilot feature where you assign a GitHub issue to Copilot and it works autonomously in the background, opening a PR when done. Managed through Mission Control.
 
-**Azure Data Studio.** A Microsoft database tool — RETIRED in 2025. Do not install. Use VS Code + mssql extension instead.
+**Copilot Space.** An enterprise-curated (or individually-curated) container of code, docs, images, issues, and custom instructions that Copilot grounds answers in. Replaced the older “knowledge bases” feature on November 1, 2025.
 
-**BCP (Bulk Copy Program).** SQL Server command-line utility for fast bulk data import/export.
+**Dev container.** A container that defines the development environment for a repo. You open the repo “in” the container and everyone gets the same tools.
 
-**Bicep.** Microsoft’s language for Azure infrastructure as code.
+**EMU.** Enterprise Managed User. Our enterprise GitHub accounts are EMU accounts, not your personal GitHub.
 
-**CJIS.** Criminal Justice Information Services. FBI security policy for systems touching criminal justice data.
+**Inner source.** Open-source-style collaboration inside an enterprise. Repos are internal, but contributions work like public open source.
 
-**cfn-guard.** AWS policy-as-code tool for CloudFormation template validation at deployment time.
+**Instruction file.** `.github/copilot-instructions.md` in a repo. Automatically loaded into every Copilot Chat turn for that repo.
 
-**cfn-lint.** AWS CloudFormation template linter. Catches syntax and structural errors.
+**MCP.** Model Context Protocol. Lets Copilot talk to real systems (GitHub, SQL, Azure, etc.).
 
-**Checkov.** IaC security scanner supporting Terraform, Bicep, CloudFormation, Ansible, and more.
+**Mission Control.** A dashboard for assigning, steering, and tracking Copilot coding-agent tasks across multiple issues at once.
 
-**CI/CD.** Continuous Integration / Continuous Delivery. Automated build, test, and deployment pipelines.
+**Multi-root workspace.** A `.code-workspace` file grouping several folders into one VS Code window.
 
-**CloudFormation.** AWS’s native IaC service — defines resources in JSON or YAML.
+**Premium request.** Copilot’s unit of paid usage for Chat, agent mode, code review, and model selection. Plans include a monthly allocation.
 
-**CodeQL.** GitHub’s semantic code analysis engine. Finds security vulnerabilities in C#, Java, JavaScript, TypeScript, Python, Go, Ruby, and Swift by analyzing how data flows through a program. Does NOT support PowerShell, T-SQL, Terraform, Bicep, Ansible, or Salt — the primary languages in this environment. On a repo full of `.ps1` and `.sql` files, CodeQL scans nothing and returns zero findings. Use only on Enterprise Development repos where supported languages are present. Secret detection in PowerShell and SQL is handled by GitHub Secret Scanning, Push Protection, Gitleaks, PSScriptAnalyzer, and Semgrep instead.
+**Profile (VS Code).** A bundle of extensions, settings, and keybindings. Switch profiles to switch contexts.
 
-**CODEOWNERS.** File listing who reviews changes to specific paths. Auto-requests reviewers on PRs.
+**Prompt file.** `.github/prompts/<name>.prompt.md`. Reusable Chat prompt invokable with `/<name>`.
 
-**COE.** Center of Excellence. Cross-org artifact-producing body.
+**Reusable workflow.** A GitHub Actions workflow defined once, called from many repos. How shared CI/CD logic is delivered.
 
-**Copilot Enterprise.** GitHub’s highest-tier AI coding assistant.
-
-**DACPAC.** Data-tier Application Package. File format for SQL Server schema deployment.
-
-**DBA.** Database Administrator.
-
-**DBeaver.** Free, open-source, cross-platform database client. Supports SQL Server, PostgreSQL, MySQL, Oracle, and many more. Recommended replacement for Azure Data Studio.
-
-**Dev container.** A Docker container defining a full development environment. Open the repo “in the container” for a consistent environment.
-
-**DevSecOps.** Development + Security + Operations as one continuous practice.
-
-**Drift.** When deployed infrastructure differs from the IaC definition.
-
-**EMU.** Enterprise Managed User. GitHub accounts provisioned by the enterprise identity provider.
-
-**gMSA.** Group Managed Service Account. Windows Active Directory account for services with auto-rotating passwords.
-
-**GCM.** Git Credential Manager. Secure storage for Git authentication tokens.
-
-**GHAS (GitHub Advanced Security).** GitHub’s enterprise security feature set. Includes Secret Scanning, Push Protection, Code Scanning (SARIF-based), and Dependabot. Secret Scanning and Push Protection are the most impactful features for this environment — they protect PowerShell and SQL files that CodeQL cannot scan.
-
-**Gitleaks.** Open-source secret scanner. Scans any file type for credential patterns using built-in and custom regex rules. Particularly useful for scanning Git history to find secrets committed before push protection was enabled. Outputs SARIF for GitHub Security tab integration.
-
-**PSScriptAnalyzer.** Microsoft’s PowerShell static analysis tool. Finds security anti-patterns in `.ps1`, `.psm1`, and `.psd1` files — hardcoded credentials, `Invoke-Expression` usage, missing error handling, deprecated cmdlets. The correct security scanner for PowerShell repos. Not CodeQL. Run it locally before pushing: `Invoke-ScriptAnalyzer -Path . -Recurse -Severity Warning,Error`.
-
-**Push Protection.** A GitHub GHAS feature that intercepts a commit before it reaches any branch if a recognized secret pattern is found. The most effective preventive control for credential exposure. Must be enabled at the enterprise level. When it blocks a commit, the developer sees exactly which pattern was matched and why.
-
-**SARIF (Static Analysis Results Interchange Format).** A standard JSON schema for security tool findings. Any tool that outputs SARIF can upload results to GitHub’s Security tab using `github/codeql-action/upload-sarif`. This is how Semgrep, Gitleaks, PSScriptAnalyzer, Checkov, and Trivy all appear in one unified security view alongside GitHub’s native findings.
-
-**Semgrep.** Open-source and commercial rule-based code scanner. Community rule packs cover PowerShell, SQL, Terraform, Bicep, Ansible, YAML, Python, JavaScript, Go, and more. Allows custom rules for organization-specific patterns — e.g., flagging connection strings that match your internal server naming convention. Outputs SARIF. Runs in GitHub Actions with `semgrep/semgrep-action`.
-
-**TruffleHog.** Open-source secret scanner focused on Git history — finds credentials committed and then deleted (which still exist in the repository’s history). Important for auditing repos that predate push protection being enabled.
-
-**GitHub Actions.** GitHub’s built-in CI/CD system. Workflows in YAML files triggered by events.
-
-**IAM.** Identity and Access Management.
-
-**IaC.** Infrastructure as Code. Defining infrastructure in configuration files.
-
-**KICS.** Keeping Infrastructure as Code Secure. Open-source multi-IaC security scanner by Checkmarx.
-
-**MCP.** Model Context Protocol. Standard for connecting AI tools to external systems.
-
-**mssql extension.** VS Code extension for SQL Server — the actively maintained successor to Azure Data Studio’s SQL functionality.
-
-**Multi-root workspace.** A `.code-workspace` file grouping multiple repos in one VS Code window.
-
-**nvm.** Node Version Manager. Manages multiple Node.js versions.
-
-**OIDC.** OpenID Connect. Protocol enabling short-lived cloud credentials from GitHub Actions.
-
-**OPA.** Open Policy Agent. Policy-as-code engine.
-
-**Pester.** PowerShell testing framework.
-
-**Podman Desktop.** Free, open-source container runtime — Docker Desktop alternative with no enterprise licensing fee.
-
-**PR.** Pull Request. Code change proposal reviewed before merging.
-
-**Profile (VS Code).** Bundle of extensions and settings. Switch profiles to change working contexts instantly.
-
-**PSScriptAnalyzer.** PowerShell static analysis tool. Catches style and security issues.
-
-**RACI.** Responsible, Accountable, Consulted, Informed.
-
-**Reusable workflow.** GitHub Actions workflow defined once, called by many repos.
-
-**Ruleset.** GitHub policy object applying rules to repos matching criteria.
-
-**Salt / SaltStack.** Agent-based configuration management. Manages large fleets via Salt minions. Strong VMware on-prem integration.
-
-**SBOM.** Software Bill of Materials. Complete inventory of build components.
-
-**SCIM.** System for Cross-domain Identity Management. Automates user provisioning.
-
-**SIEM.** Security Information and Event Management.
-
-**SLSA.** Supply-chain Levels for Software Artifacts. Build provenance framework.
-
-**SoD.** Separation of Duties. Builder ≠ auditor.
-
-**SSO.** Single Sign-On.
-
-**SSMS.** SQL Server Management Studio. Microsoft’s primary DBA GUI. Actively maintained.
-
-**T-SQL.** Transact-SQL. Microsoft’s SQL Server query dialect.
-
-**Terraform.** Open-source multi-cloud IaC tool by HashiCorp.
-
-**tflint.** Terraform linter for provider-specific rules and best practices.
-
-**Trivy.** Open-source scanner for containers, file systems, and IaC. Now covers Terraform scanning.
-
-**VMware / Broadcom.** VMware (acquired by Broadcom) produces the enterprise hypervisor stack (vSphere, vCenter, NSX) used for on-premises infrastructure.
-
-**WSL.** Windows Subsystem for Linux. Run Ubuntu inside Windows.
-
-**Zero Trust.** Never assume trust by location. Verify every identity and request.
+**WSL.** Windows Subsystem for Linux. Linux running alongside Windows.
 
 -----
 
-## 15. Where to Ask Questions
+## 13. Where to Ask Questions
 
-|Question type                            |Channel                                  |
-|-----------------------------------------|-----------------------------------------|
-|VS Code, Copilot, MCP setup              |Team channel                             |
-|Cross-team workspace questions           |Either team’s channel, tag the other team|
-|GitHub access and permissions            |Team channel or @ets-admins              |
-|Security policy questions                |@ets-secops channel                      |
-|COE / standards questions                |DevSecOps COE channel                    |
-|GitHub admin issues                      |@ets-admins rotation                     |
-|Tool procurement (Podman vs Docker, etc.)|Team channel + manager                   |
+- Team channel: post in our main channel.
+- Cross-team questions: DevSecOps COE channel.
+- Security-specific: Enterprise Security channel / Enterprise Information Security Office (EISO).
+- GitHub admin issues: our admin rotation.
+- Commonwealth IT policy questions (ITPs, Executive Order 2016-06, procurement alignment): OA/OIT channel.
 
-**Do not self-serve on anything touching production data, credentials, or shared tooling.** Ask first. This includes MCP connections to anything above Tier 1 in the registry.
+Don’t self-serve on anything you’re unsure about if it touches production data, credentials, or shared tooling. Ask. Particularly for anything with `compliance-scope = cjis` or that processes data classified as restricted under Commonwealth ITP policy.
 
 -----
 
-## 16. What to Do Next
+## 14. What’s Next After This Guide
 
-```
-PROGRESSION PATH
+Once you have the basics working, explore in this order:
 
-Week 1
-  ☐ Complete §2 — full install stack for your role
-  ☐ Complete §3 — sign in and verify Copilot
-  ☐ Create 2-3 profiles from §4 matching your role
-  ☐ Open your team's stable workspace
+1. **Write your own instruction file** for a repo you own. See how Copilot behavior changes.
+1. **Add one MCP server** (start with the remote GitHub MCP or Fetch — no credentials risk).
+1. **Build a multi-root workspace** for something you work on regularly.
+1. **Contribute a prompt file** to the shared repo. Small, reusable, saves everyone time.
+1. **Create a personal Space** for an area you know well, then promote it to an org-shared Space when it’s useful to others.
+1. **Read the companion *Enterprise Multi-Org DevSecOps Strategy* document** for the bigger picture.
 
-Week 2-3
-  ☐ Write a copilot-instructions.md for a repo you own
-     Note how suggestions change immediately
-  ☐ Add one Tier 1 MCP server (Filesystem or Fetch — no credentials)
-  ☐ Set up the team CODEOWNERS file per §10.3
-
-Week 4+
-  ☐ Open or request a cross-delivery workspace with adjacent team
-  ☐ Contribute a prompt file to the shared prompts repo
-  ☐ Add the SQL or Azure MCP (dev/sandbox, read-only)
-  ☐ Read the Enterprise Multi-Org Strategy document
-
-When ready
-  ☐ Participate in the DevSecOps COE
-  ☐ Help onboard the next new team member using this guide
-  ☐ Submit corrections to this guide via PR
-```
+You do not need to master all of this in a week. Small steps. The team is the point, not the tools.
 
 -----
 
-*Maintained by the ETS team. Corrections and improvements via PR to the platform repo. Updates tracked in Git. If something was confusing, flag it — the next person will hit the same thing.*
+*Maintained by our team. Suggestions via PR. Updates tracked in the changelog.*
