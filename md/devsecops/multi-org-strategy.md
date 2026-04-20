@@ -1,1646 +1,559 @@
 # Enterprise Multi-Org DevSecOps Strategy
 
-## Draft v2 — Living Document
+**Purpose.** A living strategy document for the enterprise-wide rollout of GitHub, Copilot Enterprise, MCP, and VS Code practices across Commonwealth of Pennsylvania orgs — Enterprise Managed Services & Delivery, the Enterprise Information Security Office (EISO), Enterprise Development, CODE PA, and participating agency orgs. Written to be readable by people new to this space and to give the DevSecOps COE a stable reference to work from, one step at a time.
 
-**Purpose.** A living strategy document for the enterprise-wide rollout of GitHub, Copilot Enterprise, MCP (Model Context Protocol), and VS Code practices across multiple orgs. Covers all teams within Enterprise Technology Services, Enterprise Security, Enterprise Development, and customer orgs. Written to be readable by people completely new to this space while giving the DevSecOps COE (Center of Excellence) a stable reference to work from, one step at a time.
+**Status.** Draft v1.1. Expected to evolve through COE decisions recorded as ADRs.
 
-**Status.** Draft v2. Evolves through COE decisions recorded as ADRs (Architecture Decision Records). See §13.
+**Audience.** Org owners, COE members, architects, security partners, team leads across participating orgs. No deep GitHub-admin expertise assumed.
 
-**Audience.** Org owners, COE members, architects, security partners, team leads across all participating orgs. No deep GitHub administration expertise assumed.
+**Companion document.** For the developer-level setup (VS Code, profiles, workspaces, MCP wiring, instruction files), see the *Team Setup Guide*. This strategy document is the governance and rollout layer; the Team Setup Guide is the hands-on day-one onboarding layer.
+
 -----
 
 ## 0. How to Read This Document
 
-This is a long document because the topic is large. Sections are written to stand on their own. You do not need to read it end-to-end.
+This is a long document because the topic is large. You don’t need to read it end-to-end. Sections are independent enough to stand alone. Suggested reading order by role:
 
-**Suggested reading by role:**
-
-|Your role                                   |Start here                                           |
-|--------------------------------------------|-----------------------------------------------------|
-|Brand new to this work                      |§1, §2, §3, §18, §19                                 |
-|COE members                                 |§1, §4, §5, §6, §13, §16, §18, §19                   |
-|Security partners                           |§1, §4, §5, §7, §8, §9, §13, §14                     |
-|Developers and team leads                   |§2, §3, §6, §11, §18 — then the Team Setup Guide     |
-|GitHub tenancy admins                       |§4, §5, §7, §8, §9                                   |
-|DBA and data platform teams                 |§2, §3, §6, §10, §11, §18 — then the Team Setup Guide|
-|Platform / IAM / Networking / Security teams|§2, §3, §5, §6, §10, §11, §12                        |
-|Customer/agency teams                       |§12, §13, §14, §15, §18                              |
+- **Brand new to this work:** sections 1, 2, 3, 14, 15.
+- **COE members:** sections 1, 4, 5, 12, 13, 14, 15.
+- **Security partners (EISO / agency ISOs):** sections 1, 4, 6, 7, 8, 11.
+- **Developers and team leads:** sections 2, 3, 9, 10, 14. Then read the Team Setup Guide.
+- **GitHub tenancy admins:** sections 4, 6, 7, 8, 11, 13.
 
 Every section answers three questions: **what** (is this thing), **why** (does it matter here), **how** (do we start, in small steps).
-
-**Key terms used throughout:**
-
-- **Org** — a GitHub organization. A container that holds repositories and sets policies for them.
-- **Repo** — a repository. A project’s code, files, and history stored in GitHub.
-- **CI/CD** — Continuous Integration / Continuous Delivery. Automated pipelines that build, test, and deploy code.
-- **PR** — Pull Request. A proposal to merge code changes, reviewed before merging.
-- **ADR** — Architecture Decision Record. A document capturing a single decision and its reasoning. See §18 for full glossary.
-- **IaC** — Infrastructure as Code. Defining servers, networks, and cloud resources in configuration files rather than manual clicks.
 
 -----
 
 ## 1. Guiding Principles
 
-These decisions about *how* we work apply before any specific tool choice.
+These are the decisions we’ve made about *how* we work, before any specific tool choice.
 
-**We are running a platform, not a team.** Our org provides shared services. Other orgs are our customers. Every pattern needs a consumable version — a template, a reusable workflow, a shared module, a documented standard — not just a working implementation inside our own repos.
+**We are running a platform, not a team.** Our org provides shared services. Other orgs and agencies are our customers. Every pattern we adopt needs a consumable version — a template, a reusable workflow, a shared module, a documented standard — not just a working implementation inside our own repos.
 
-**Small steps, staged rollout.** This is new territory for most participants. The COE agenda moves one or two artifacts (concrete deliverables) forward per sprint. Patterns are piloted in low-risk repos before being required anywhere.
+**Small steps, staged rollout.** This is new territory for most participants, and the Enterprise GitHub EMU tenancy is still young. We deliberately avoid big-bang changes. The COE agenda moves one or two artifacts forward per sprint. Patterns are piloted in low-risk repos before being required anywhere.
 
-**Make the right thing the easy thing.** Orgs that resist standards are not the problem. Standards harder to follow than to ignore are the problem. Templates, workflows, and tools exist to reduce friction.
+**Make the right thing the easy thing.** Orgs that resist standards aren’t the problem. Standards that are harder to follow than to ignore are the problem. Templates, reusable workflows, instruction files, Copilot Spaces, and MCP servers exist to reduce friction, not to enforce compliance through pain.
 
-**Transparency and visibility over gatekeeping.** Zero Trust (an architectural principle: never assume trust based on location — always verify) means continuous verification, not continuous blocking. Measurable posture over ad-hoc approval gates. No centralized controls that prevent visibility, accountability, transparency, or autonomy.
+**Transparency and visibility over gatekeeping.** Zero Trust means continuous verification, not continuous blocking. We prefer measurable posture (dashboards, attestations, evidence) over ad-hoc approval gates.
 
-**No rogue operators, no invisible power.** Every administrative action is logged. Every policy decision is recorded in an ADR. GitHub tenancy administrators operate transparently with Enterprise Security as co-observers. Separation of duties (SoD — builder ≠ auditor) is the target state; transparency is the interim compensating control.
+**Grounded in recognized standards.** Security architecture choices reference NIST (Cybersecurity Framework 2.0, SP 800-53 Rev. 5, SP 800-218 SSDF, SP 800-218A for AI/LLM-related development, SP 800-207 Zero Trust), CJIS Security Policy where applicable, CIS Benchmarks, and OWASP SAMM/ASVS. Commonwealth-specific requirements flow from Executive Order 2016-06 and the OA/OIT Information Technology Policy (ITP) catalog. When we deviate from any of these, we record why in an ADR.
 
-**Grounded in recognized standards.** Architecture choices reference NIST (SP 800-53, SP 800-218 SSDF, SP 800-207 Zero Trust), CJIS Security Policy, CIS Benchmarks, OWASP SAMM/ASVS, and applicable standards. Deviations are recorded in ADRs.
+**Flexibility and learning.** This document will be wrong in places. It will get updated. Nobody is expected to know all of it. Asking questions in the COE is the point of the COE.
 
-**Learn from the field.** States and agencies that have already modernized (see §15) provide concrete evidence of what works and what fails. We learn from them and aim to go further.
-
-**Flexibility and learning.** Nobody is expected to know all of this. Asking in the COE is the point of the COE. This document will be updated.
-
-**Crossover is temporary and intentional.** Our org currently holds GitHub tenancy admin. The goal is proper SoD. Near-term, we act as stewards: we build the patterns, document the handoffs, and move responsibilities when the receiving org is ready.
+**Crossover is temporary and intentional.** The current topology has our Enterprise Managed Services org holding responsibilities that logically belong to Enterprise Security (EISO), including GitHub tenancy admin. This is acknowledged. The long-term goal is proper separation of duties. Near-term, we act as stewards: we build the patterns, document the handoffs, and move responsibilities when the receiving org is ready.
 
 -----
 
-## 2. The Problem We Are Solving
+## 2. The Problem We’re Solving
 
-The enterprise has many orgs doing technology work. Some silos are healthy. Many are not — producing duplicated effort, inconsistent security posture, and tools deployed without cross-functional review.
+The Commonwealth has many orgs and agencies doing technology work. Some silos are healthy (focused ownership); many are not (duplicated effort, inconsistent security posture, no shared language for architecture, tooling adopted without cross-functional input).
 
-**Specific pain today:**
+Specific pain today:
 
+- Enterprise GitHub EMU is relatively new — there is active growth without consistent guardrails in place yet. Wild-West patterns are forming organically and will be harder to change later than now.
 - New tools get deployed without security, data, or architecture review.
 - Standards exist as slides and wiki pages. Very little is enforceable or measurable.
 - Each team reinvents CI/CD, secret scanning, and dependency management.
-- On-premises IaC tooling (VMware/Broadcom, Ansible, Salt) is inconsistently used and not integrated into the same DevSecOps pipeline as cloud.
-- AI tooling arrives faster than policy.
-- Customer/agency orgs have no clear, compliant, autonomous path to build and deploy cloud resources.
+- AI tooling (Copilot, MCP, Copilot Spaces, coding agent) is arriving fast — faster than policy can keep up.
+- Agency orgs have no clear “golden path” — they ask us, they ask EISO, they get different answers, or no answer.
 - Evidence for audits is gathered manually every time.
-- GitHub teams and permissions are inconsistently configured, creating both gaps and unnecessary restrictions.
 
-**The goal:** a federated practice where:
-
-```
-REQUIRED    → enforced consistently (Enterprise Security + policy)
-RECOMMENDED → easy to adopt (published by our org / COE)
-OPTIONAL    → customization within guardrails (team-specific)
-```
+The goal: a federated technology practice where **required** security is enforced consistently, **recommended** patterns are easy to adopt, and **optional** customization is possible without breaking the baseline. Zero Trust applied to code: verify continuously, attribute everything, trust the process more than the individual.
 
 -----
 
 ## 3. Roles and Orgs — Who Does What
 
-### 3.1 Enterprise Technology Services — Our Org
+Written plainly so people joining the COE understand the players. Names are descriptive, not formal.
 
-We build and run shared platforms. Our org has many teams that collaborate closely and share the same GitHub organization. Key teams:
+**Enterprise Managed Services & Delivery (our org).** Builds and runs shared platforms: data platform, backup, infrastructure, firewall, change and ordering systems, on-prem and multi-cloud. Currently also holds GitHub tenancy admin. Leads the DevSecOps COE and publishes most shared templates, workflows, and modules.
 
-**Data Platform / DBA Team**
-SQL Server administration, optimization, migration, managed database services. Leading adoption of new tools and processes across other database teams. Close collaboration with Platform, IAM, Security, and Networking.
+**Enterprise Information Security Office (EISO).** Policy, governance, scanning, logging, incident response. Owns required security baselines. Led by the Commonwealth CISO. Partners with us on architecture. Long-term owner of enterprise-level GitHub security configuration.
 
-**Platform Engineering**
-Shared infrastructure services, cloud landing zones (pre-configured cloud environments with governance built in), compute, storage. On-premises VMware/Broadcom environment management.
+**Enterprise Development.** Common models, shared application frameworks, custom development. Publishes libraries and reference implementations that other orgs consume.
 
-**IAM (Identity and Access Management)**
-Enterprise identity, SSO (Single Sign-On), directory services, access policy, privileged access management. Cross-cutting concern touching every other team.
+**CODE PA (Commonwealth Office of Digital Experience).** Established 2023. Focused on citizen-facing digital services and consolidation of the public-facing PA.gov footprint. Natural consumer and contributor to the shared CI/CD and templating work described here.
 
-**Security Operations (SecOps)**
-Threat monitoring, incident response, vulnerability management, security tooling. Works closely with Enterprise Security on policy; handles operational security within our org.
+**OA/OIT (Office of Administration, Office of Information Technology).** Publishes the Commonwealth’s IT policy catalog (ITPs) under Executive Order 2016-06. Sets the baseline that all agencies follow.
 
-**Networking / Firewall**
-Enterprise network design, firewall rule management, change management for network policy, DNS, connectivity between on-prem and cloud.
+**Agency orgs (varied).** Some run fully self-sufficient technology. Some consume our managed services entirely. Most are hybrid. They are not obligated to adopt every pattern we publish, but we want our patterns to be the easiest choice.
 
-**Backup and Disaster Recovery**
-Enterprise backup systems, recovery testing, data protection standards, RPO/RTO (Recovery Point/Time Objectives) governance.
+**The DevSecOps COE.** A standing cross-org body that produces decisions, standards, reference implementations, and reusable workflows. Not a meeting body — an artifact-producing body. Membership includes representatives from each participating org. Currently running as an informal community effort; formalization is itself a COE agenda item.
 
-**Build, Ordering, and Automation**
-Change management, service request fulfillment, ordering systems, integration workflows between enterprise technology services and customer orgs.
-
-**DevSecOps COE Secretariat**
-We run the COE (Center of Excellence), produce its artifacts, and lead adoption. The COE draws participants from all teams above and from Enterprise Security and Enterprise Development.
-
-### 3.2 Enterprise Security
-
-Policy, governance, security scanning, logging, incident response. Owns required security baselines. Long-term owner of enterprise-level GitHub configuration. Primary architecture partner.
-
-### 3.3 Enterprise Development
-
-Common application models, shared libraries, frameworks, custom development. Publishes reference implementations that other orgs consume.
-
-### 3.4 Customer / Agency Orgs — Three Types
-
-```
-Customer/Agency Org Types
-├── Self-Sufficient
-│   ├── Own technology teams
-│   ├── Own GitHub orgs (within the enterprise)
-│   ├── May adopt our patterns voluntarily
-│   └── Need: compliant autonomous cloud deployment process
-│
-├── Hybrid
-│   ├── Some in-house capability
-│   ├── Consume some managed services
-│   ├── Mix of their own and our standards
-│   └── Need: clear handoff points between self-managed and managed
-│
-└── Fully Managed
-    ├── Limited or no dedicated tech staff
-    ├── Consume our services end-to-end
-    └── Need: turn-key compliant environments with visibility
-```
-
-### 3.5 The DevSecOps COE
-
-A standing cross-org body that produces decisions, standards, reference implementations, and workflows. Not a meeting body — an artifact-producing body.
-
-### 3.6 Org Constellation
-
-```
-                    ┌─────────────────────────────────────┐
-                    │       GitHub Enterprise EMU         │
-                    │  SSO · SCIM · Audit Logs · Policies │
-                    └──────────────┬──────────────────────┘
-                                   │ contains
-          ┌────────────────────────┼────────────────────────┐
-          │                        │                        │
-          ▼                        ▼                        ▼
-┌─────────────────┐   ┌──────────────────────┐   ┌─────────────────┐
-│ Enterprise      │   │  Enterprise Tech      │   │  Enterprise     │
-│ Security Org    │   │  Services Org (ours)  │   │  Development    │
-│                 │   │                       │   │  Org            │
-│ Required policy │   │  Teams (see §5):      │   │                 │
-│ Scan rules      │◄──│  Data/DBA · Platform  │──►│ Libraries       │
-│ Scan patterns   │   │  IAM · SecOps         │   │ Frameworks      │
-│ Audit baselines │   │  Networking · Backup  │   │ Reference apps  │
-│                 │   │  Automation · COE     │   │                 │
-│                 │   │  [interim: GH admin]  │   │                 │
-└────────┬────────┘   └──────────┬────────────┘   └────────┬────────┘
-         │                       │ patterns/templates       │
-         └───────────────────────┼──────────────────────────┘
-                                 ▼
-         ┌───────────────────────────────────────────────┐
-         │           Customer / Agency Orgs              │
-         │  Self-Sufficient │   Hybrid   │   Managed     │
-         └───────────────────────────────────────────────┘
-```
+A one-page responsibility matrix (who sets, who enforces, who audits each class of policy) lives in the COE repo and gets updated whenever a handoff happens. The matrix explicitly calls out the OA/OIT ITP-catalog relationship so agency teams can trace “why is this required” back to a published Commonwealth policy.
 
 -----
 
 ## 4. GitHub Enterprise Topology
 
-### 4.1 Three Configuration Levels
+### 4.1 The Layers
 
-```
-GITHUB ENTERPRISE CONFIGURATION HIERARCHY
+GitHub EMU has three levels of configuration: **enterprise**, **org**, and **repo**. Each has things it does well. Placing a setting at the wrong level creates either sprawl or inflexibility. Rough rules:
 
-┌─────────────────────────────────────────────────────────────────┐
-│  ENTERPRISE LEVEL                                               │
-│  Owner: Enterprise Security (target) / Us (current interim)   │
-│                                                                 │
-│  SSO · SCIM · IP allow lists · Audit log streaming             │
-│  Copilot content exclusions · Secret scanning defaults         │
-│  Push protection · Required rulesets · Custom properties       │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-          ┌─────────────────┼──────────────────────┐
-          ▼                 ▼                      ▼
-┌──────────────┐   ┌──────────────┐      ┌──────────────┐
-│  ENTERPRISE  │   │  MANAGED     │      │  CUSTOMER    │
-│  SECURITY    │   │  SERVICES    │      │  AGENCY ORG  │
-│  ORG         │   │  ORG (ours)  │      │              │
-│              │   │              │      │              │
-│ Required     │   │ Recommended  │      │ Their code   │
-│ workflows    │   │ workflows    │      │ Their teams  │
-│ Scan rules   │   │ Templates    │      │ (+ baseline) │
-└──────────────┘   └──────────────┘      └──────────────┘
-                            │
-                   ┌────────▼────────┐
-                   │  REPO LEVEL     │
-                   │  CODEOWNERS     │
-                   │  Branch rules   │
-                   │  Instruction    │
-                   │  files, mcp.json│
-                   └─────────────────┘
-```
+|Setting type                                                                     |Level                       |Owner                        |
+|---------------------------------------------------------------------------------|----------------------------|-----------------------------|
+|SSO, IP allow lists, audit log streaming                                         |Enterprise                  |EISO (eventual), us (current)|
+|Copilot policies, content exclusions, Spaces enablement, model availability, BYOK|Enterprise                  |EISO                         |
+|Secret scanning, push protection defaults                                        |Enterprise                  |EISO                         |
+|Enterprise-wide custom properties                                                |Enterprise                  |Joint                        |
+|Enterprise-level required rulesets (signed commits, required workflows)          |Enterprise                  |EISO                         |
+|Organization-level custom properties (enterprise GA as of 2025)                  |Enterprise                  |Joint                        |
+|Org-level Actions permissions                                                    |Org                         |Each org                     |
+|Recommended reusable workflows                                                   |Org (ours)                  |Us                           |
+|Repo templates per archetype                                                     |Org (ours or Enterprise Dev)|Publishing org               |
+|Branch protection beyond the baseline                                            |Repo                        |Repo owner                   |
+|CODEOWNERS                                                                       |Repo                        |Repo owner                   |
 
-### 4.2 Custom Properties — Tagging Every Repo
+### 4.2 Suggested Org Structure
 
-Custom properties are labels on repos that let rulesets and automation target groups by characteristic. See §14 for full tagging standards. Core set:
+Over time, we move toward:
 
-|Property             |Values                                    |Purpose                                   |
-|---------------------|------------------------------------------|------------------------------------------|
-|`data-classification`|public, internal, confidential, restricted|Data protection level                     |
-|`environment`        |sandbox, dev, test, prod                  |Where output runs                         |
-|`service-tier`       |tier-1, tier-2, tier-3, none              |Business criticality                      |
-|`owning-team`        |team code                                 |Accountability                            |
-|`compliance-scope`   |none, pci, hipaa, sox, cjis, fisma, other |Regulatory requirements                   |
-|`lifecycle`          |active, maintenance, deprecated, archived |Repo lifespan state                       |
-|`agency-code`        |agency identifier                         |Customer attribution for billing/reporting|
-|`iac-platform`       |vmware, azure, aws, gcp, hybrid, none     |Infrastructure deployment target          |
-|`deployment-model`   |managed, self-service, hybrid             |How this repo’s output gets deployed      |
+- **EISO org** — required rulesets, CodeQL custom queries, required reusable workflows (security scans, SBOM, attestations), policy-as-code bundles, Enterprise Security Copilot Space.
+- **Our org (Enterprise Managed Services)** — our delivery repos, the DevSecOps COE artifacts, recommended reusable workflows for our domains, shared modules, MCP configuration references, Copilot Spaces for data platform and cloud governance.
+- **Enterprise Development org** — shared libraries, reference applications, common frameworks.
+- **CODE PA org** — citizen-facing service code and shared components for the PA.gov platform.
+- **Agency orgs** — their own code, consuming from the above.
 
-### 4.3 Rulesets — Policy That Scales
+Interim state (today): we hold some of what belongs in EISO. We document the handoff plan in the COE and move responsibilities piece by piece when the receiving team is staffed and ready.
 
-Write a ruleset once, target by custom property, apply across many repos. Always stage in **evaluate mode** (report-only) before enforcing.
+### 4.3 Custom Properties — Tag Everything
 
-```
-Example rulesets:
+Custom properties are labels applied to repos or orgs at the enterprise or org level. They let rulesets and automation target groups of repos without naming each one. Both **enterprise custom properties** and **organization custom properties** are now generally available, so you can tag once at the enterprise level and have the property visible everywhere.
 
-Ruleset: CJIS-Compliance-Baseline
-  Targets: compliance-scope = cjis
-  Rules:
-    ✓ Require signed commits
-    ✓ Require 2 reviewers (including security team member)
-    ✓ Require security scan workflow to pass (Semgrep + Gitleaks + PSScriptAnalyzer)
-    ✓ Require secret scanning to pass (push protection always on)
-    ✓ Require linear history (no merge commits)
+> **Recent capability.** GitHub now lets enterprise/org admins require repo creators to *explicitly* select a value for a custom property instead of relying on the default. Use this for `data-classification`, `compliance-scope`, and `owning-team` so repos can’t be created without classification metadata.
 
-Ruleset: Production-Environments
-  Targets: environment = prod
-  Rules:
-    ✓ Require CODEOWNERS review on /infra/**
-    ✓ Require CODEOWNERS review on /.github/workflows/**
-    ✓ Prohibit force-push
-    ✓ Require deployment workflow approval
+Starting property set:
 
-Ruleset: Agency-Self-Service-Guardrail
-  Targets: deployment-model = self-service
-  Rules:
-    ✓ Require template compliance workflow to pass
-    ✓ Require tag-validation workflow to pass
-    ✓ Prohibit deletion of required policy files
-    ✓ Require security scan workflow
-```
+- `data-classification` — public, internal, confidential, restricted
+- `environment` — sandbox, dev, test, prod
+- `service-tier` — tier-1, tier-2, tier-3, none
+- `owning-team` — short team code
+- `owning-agency` — the owning Commonwealth agency or “enterprise”
+- `compliance-scope` — none, pci, hipaa, sox, cjis, irs-1075, ferpa, other
+- `lifecycle` — active, maintenance, deprecated, archived
+- `ai-usage` — none, copilot-code-suggestions, copilot-agent, copilot-coding-agent (helps EISO track where AI tooling is involved)
+
+Tagging existing repos is tedious but pays off forever. Start with the top 50 by activity. Everything else gets defaults. Treat this as a week-one COE deliverable, not a “someday” item.
+
+### 4.4 Rulesets — Policy That Scales
+
+Rulesets replace manual branch-protection configuration. Write a ruleset once, target by custom property, apply across many repos. **Enterprise-level rulesets are now GA**, so EISO can own baselines at the enterprise tier; we layer on top for our repos.
+
+Examples we expect to land:
+
+- All repos with `compliance-scope = cjis` require signed commits, two reviewers, passing CodeQL, and the security reusable workflow.
+- All repos with `environment = prod` require CODEOWNERS review on `/infra/**` and `/.github/workflows/**`.
+- All repos with `data-classification = restricted` block force-push to default branches and require linear history.
+- All repos tagged `owning-agency` require a populated `CODEOWNERS` before the first PR can merge.
+
+Rulesets are staged in **Evaluate mode** first (report-only) before becoming enforcing. Use Rule Insights to track which rules would have blocked work and prioritize developer enablement before flipping to enforcing. Nothing surprises a team on a Monday.
+
+Bypass roles should be scoped to org/repo admin roles, not named individuals. Named-actor bypass exists but is a last resort and should carry an ADR.
 
 -----
 
-## 5. Teams and Permissions Design Reference
+## 5. Inner Source — How Patterns Actually Spread
 
-This section is a **model and reference** for our org and for any other org learning to set up GitHub teams. The patterns here should be the first thing a new org reads when setting up their own team structure.
+In a multi-org enterprise, mandates don’t spread patterns; adoption does. Inner source treats internal repos like open source across org boundaries.
 
-### 5.1 Core Concepts
+**What we publish from our org:**
 
-**GitHub access levels (lowest to highest):**
+- Repository templates per archetype (SQL Database Project, PowerShell Module, Bicep Module, Terraform Module, Python Service, Static Docs Site).
+- Reusable workflows for each archetype (build, test, scan, deploy).
+- Starter workflows so the GitHub Actions “new workflow” button shows enterprise-blessed templates first.
+- Shared PowerShell modules, Bicep modules, Terraform modules.
+- The Approved MCP Server Registry.
+- Copilot instruction file libraries per archetype.
+- Seed content and instructions for shared Copilot Spaces.
 
-```
-READ     → Clone, view code, open issues
-TRIAGE   → Manage issues and PRs, label, close/reopen (no code push)
-WRITE    → Push branches, open and merge PRs (within protection rules)
-MAINTAIN → Manage repo settings (not destructive admin actions)
-ADMIN    → Full control including destructive actions (delete, archive)
-```
+**How we publish:**
 
-**Rule:** Assign the minimum level that lets the team do their job. Start at Read. Elevate when needed. Document why.
+- Internal visibility (the whole enterprise can read).
+- Semantic versioning and tagged releases. Consumers pin to versions, not `@main`.
+- `CONTRIBUTING.md`, `CODEOWNERS`, clear issue templates.
+- A triage rotation on our side — someone on our team owns external issues each sprint. Without this, inner source decays.
 
-**Org owners** (the GitHub equivalent of system admin) should be ≤3 people, named individuals, audited regularly. This is not a role for teams or shared accounts. Org owner access should require MFA (Multi-Factor Authentication) and short-lived sessions.
-
-### 5.2 Enterprise Technology Services — Team Hierarchy
-
-Teams in GitHub can be **nested** (parent/child). Child teams inherit parent permissions but can be granted additional access. This allows “department-level” and “squad-level” teams without duplicating permission assignments.
-
-```
-GitHub Org: Enterprise Technology Services
-│
-├── @ets-admins                          ← Org owners. ≤3 named people.
-│   Purpose: Emergency access, org config, billing
-│   Repo access: Admin on all repos (via org ownership)
-│   Policy: Every admin action must be logged with a reason
-│
-├── @ets-platform                        ← Platform Engineering team
-│   Purpose: Shared infra, landing zones, cloud platforms
-│   Repo access:
-│     Maintain → platform repos
-│     Write    → shared module repos, IaC repos
-│     Read     → all org repos
-│
-├── @ets-data                            ← Data Platform / DBA team
-│   Purpose: SQL Server, data platform, backup pipelines, BCP
-│   Repo access:
-│     Maintain → data platform repos
-│     Write    → shared PS modules repo, data ADR repo
-│     Read     → platform repos (for integration awareness)
-│   Sub-teams:
-│     @ets-data-dba    ← SQL Server DBAs specifically
-│     @ets-data-eng    ← Data engineers / pipeline builders
-│
-├── @ets-iam                             ← Identity and Access Management
-│   Purpose: SSO policy, access provisioning, privileged access
-│   Repo access:
-│     Maintain → IAM policy repos
-│     Write    → identity configuration repos
-│     Read     → ALL repos (IAM is a cross-cutting concern)
-│   Note: Read-all is justified — IAM must understand access
-│         patterns across everything they govern
-│
-├── @ets-secops                          ← Security Operations
-│   Purpose: Threat monitoring, incident response, vuln management
-│   Repo access:
-│     Maintain → security tooling repos, SIEM config repos
-│     Triage   → ALL repos (can manage security issues/alerts anywhere)
-│     Read     → ALL repos (audit and monitoring function)
-│   Note: Triage-all is intentional. SecOps must be able to
-│         manage security alerts in any repo without a PR.
-│
-├── @ets-networking                      ← Networking / Firewall
-│   Purpose: Network design, firewall policy, DNS, connectivity
-│   Repo access:
-│     Maintain → networking and firewall repos
-│     Write    → network IaC repos (Ansible, VMware NSX)
-│     Read     → platform repos, cloud landing zone repos
-│
-├── @ets-backup                          ← Backup and DR
-│   Purpose: Enterprise backup, recovery testing, DR procedures
-│   Repo access:
-│     Maintain → backup automation repos
-│     Write    → shared backup module repo
-│     Read     → data platform repos, platform repos
-│
-├── @ets-automation                      ← Build, Ordering, Automation
-│   Purpose: Change management, service ordering, integration workflows
-│   Repo access:
-│     Maintain → automation and ordering repos
-│     Write    → integration workflow repos
-│     Read     → platform repos
-│
-├── @ets-devsecops-coe                   ← COE participants (cross-team)
-│   Purpose: COE artifact production, standards, templates
-│   Membership: One or more people from each above team
-│   Repo access:
-│     Maintain → COE repo, template repos, reusable workflow repos
-│     Write    → docs site repo
-│     Read     → all org repos
-│
-└── @ets-contributors                    ← General contributors (external to our teams)
-    Purpose: Partner-team members who contribute to our repos
-    Repo access: Granted per-repo by repo maintainer
-    Default: Read on repos they need. Write on specific paths via PR.
-```
-
-### 5.3 Cross-Team Collaboration Pattern
-
-Many repos serve multiple teams. Rather than adding individuals, use team-based access:
-
-```
-Repo: sql-backup-automation
-  @ets-data       → Maintain  (primary owners)
-  @ets-platform   → Write     (platform integration points)
-  @ets-backup     → Write     (backup team contributes procedures)
-  @ets-secops     → Triage    (can manage security alerts)
-  All others      → Read      (via org-wide read default)
-
-CODEOWNERS in this repo:
-  /src/              @ets-data/dba-team
-  /infra/            @ets-platform
-  /backup-procs/     @ets-backup @ets-data/dba-team
-  /.github/          @ets-devsecops-coe @ets-secops
-```
-
-**The CODEOWNERS file provides finer control than team access level.** A team might have Write access to a repo but CODEOWNERS ensures the right sub-group reviews the right paths.
-
-### 5.4 Permissions Guardrails — Preventing Rogue Operators
-
-The following controls prevent unchecked access without creating unnecessary friction:
-
-```
-PREVENTING ROGUE OPERATIONS
-
-Control                         How it's implemented
-──────────────────────────────  ──────────────────────────────────────────
-No direct push to main          Branch protection: require PR on main
-                                No one bypasses this — including admins
-
-No self-approval                Branch protection: author cannot approve
-                                their own PR
-
-Required reviews                Minimum 1 reviewer for standard repos
-                                Minimum 2 for compliance-scoped repos
-
-Workflow file protection        CODEOWNERS: /.github/workflows/ requires
-                                @ets-secops or @ets-devsecops-coe review
-
-Admin actions logged            GitHub audit log streams to SIEM
-                                All org-owner actions generate alerts
-
-Org owner audit                 Quarterly review of who holds org owner
-                                Any addition requires ADR
-
-Secret management               No secrets in code (push protection on)
-                                Secrets via GitHub Environments with
-                                required reviewer approval for prod
-
-Visibility: not hidden power    Security and IAM teams have read-all
-                                so no configuration is invisible to them
-```
-
-### 5.5 This Org as a Model
-
-Our org’s team structure should be documented, published (as internal visibility), and referenced by customer/agency orgs when they set up their own GitHub organizations. The pattern:
-
-1. Start with the minimum team hierarchy needed
-1. Use nested teams for sub-specialties
-1. Assign repo access at team level, not individual level (individuals move; teams are stable)
-1. Use CODEOWNERS for path-level control
-1. Document every non-obvious access decision in the repo’s README or in an ADR
+**Discovery:** an internal docs site (GitHub Pages is enough to start) indexes templates and workflows, shows “when to use this,” and links to the source. Templates nobody can find don’t get used. The same index powers a Copilot Space so developers can also *ask* “which template fits my project?” in Chat.
 
 -----
 
-## 6. Branch Strategy — Clarified
+## 6. Security Strategy — Grounded and Staged
 
-This section replaces and corrects language in v1 that caused confusion about when to use `main` versus version tags.
+This section is where we as point lead contribute most directly, in partnership with EISO.
 
-### 6.1 `main` Is the Version of Truth
+### 6.1 Anchor Standards
 
-In every repo we own and every repo our team develops on, **`main` is the production-ready branch.** It is always deployable. It is always reviewed. It is the thing others should clone, fork from, or reference.
+Our security architecture references established frameworks rather than inventing new ones. Named explicitly so teams know what to read:
 
-```
-STANDARD BRANCH MODEL (GitHub Flow)
+- **NIST Cybersecurity Framework 2.0 (Govern, Identify, Protect, Detect, Respond, Recover).** CSF 2.0 added the **Govern** function as the sixth core function — explicitly covering cybersecurity strategy, policy, oversight, and supply-chain risk management. Our COE, responsibility matrix, and ADR process map naturally to the Govern function; when speaking to auditors or other agencies, we frame what the COE produces as Govern-function outputs.
+- **NIST SP 800-218 (SSDF) v1.1.** Secure software development framework — the baseline for how we structure CI/CD security controls. Note: NIST published an SP 800-218 Rev. 1 (v1.2) public draft in December 2025; we’ll track the final and adapt.
+- **NIST SP 800-218A.** SSDF Community Profile for generative AI and dual-use foundation models. Directly relevant to how we govern Copilot and MCP in the development flow. Applies in addition to SP 800-218, not instead of it.
+- **NIST SP 800-53 Rev. 5.** Control catalog. Used when agency orgs ask “what control does this map to?”
+- **NIST SP 800-207 (Zero Trust).** Architectural principles applied to identity, device, workload, and data.
+- **CJIS Security Policy.** Required for any repo with `compliance-scope = cjis`. Drives specific controls around logging, access, and data handling. Relevant wherever Commonwealth criminal justice data is in scope.
+- **CIS Benchmarks.** For baseline hardening of underlying platforms.
+- **OWASP SAMM / ASVS.** Maturity and verification models for application security.
+- **Commonwealth ITP catalog and Executive Order 2016-06.** The Pennsylvania-specific policy layer that sits on top of the above frameworks. Every standard we publish should cite the relevant ITP where one exists and flag when one is missing so EISO can consider publishing one.
 
-  feature/add-retention-policy  ──────────────────────► PR ──► main
-  fix/bcp-quote-handling         ──────────────────────► PR ──► main
-  hotfix/cjis-audit-gap          ──────────────────────► PR ──► main
+None of these are complete on their own. Together they give us a vocabulary that EISO, auditors, agency partners, and vendors all recognize.
 
-main is always:
-  ✓ Passing all required checks (security scan, secret scan, build, lint)
-  ✓ Reviewed and approved (via PR + CODEOWNERS)
-  ✓ Deployable to production
-  ✓ The version template processes and pipelines reference
-  ✓ The thing you clone to start work
-```
+### 6.2 Zero Trust Applied to Code
 
-Feature branches are in-progress work. They are merged to `main` via PR only after review and passing checks. No one develops directly on `main`. Releases are tagged on `main`.
+Zero Trust in the development context means:
 
-### 6.2 When Version Tags Apply (Consumer vs Producer)
+- **Identity is verified per action, not per session.** SSO + SCIM for GitHub EMU. Short-lived tokens. No shared service accounts.
+- **Machines authenticate like humans.** OIDC federation from GitHub Actions to cloud providers. No long-lived cloud credentials stored in GitHub Secrets.
+- **Every artifact is attributable.** Build provenance attestations (SLSA-style) generated by reusable workflows. SBOMs produced per build.
+- **Verify continuously.** Secret scanning with push protection, dependency scanning, CodeQL, IaC scanning (Checkov, tfsec, Trivy) — all running on every PR, not just pre-release.
+- **Least privilege everywhere.** Workflow tokens scoped to the minimum. CODEOWNERS on sensitive paths. Environment protection rules on deploy jobs.
+- **AI tool use is traceable.** Copilot audit logs streamed to SIEM alongside other GitHub events. Spaces, prompt files, and MCP usage governed through org-level policy.
 
-The distinction is between **your own repos** (where `main` is truth) and **consuming shared repos from someone else** (where pinning to a version tag protects you from their changes).
+### 6.3 Staged Rollout
 
-```
-YOU ARE THE PRODUCER (your own repo):
-  main = production truth
-  Feature branches → PR → main
-  Tag releases from main: v1.0, v2.1, v3.0
+We don’t turn everything on everywhere. A rough sequence:
 
-YOU ARE THE CONSUMER (calling another org's shared workflow):
-  # Fragile — their next commit to main could break you:
-  uses: enterprise-security/security/.github/workflows/security-scan.yml@main
+**Stage 1 — Foundations (first quarter of work).** SSO, audit log streaming (including Copilot events) to SIEM, enterprise-level secret scanning with push protection, Dependabot on by default. Low-risk, high-leverage, mostly invisible to developers. Rulesets drafted in Evaluate mode.
 
-  # Stable — you update on your schedule, after testing:
-  uses: enterprise-security/security/.github/workflows/security-scan.yml@v3
-```
+**Stage 2 — Baseline CI.** Required reusable workflow for security scans on a pilot set of repos. CodeQL on all repos where the language is supported. SBOM generation. Measured by coverage percentage. First enforcing rulesets for `compliance-scope != none` repos.
 
-**Why pin versions when consuming?** If Enterprise Security pushes a breaking change to their reusable workflow’s `main`, every repo referencing `@main` breaks simultaneously — no warning, no testing, no choice. Pinning to `@v3` means their `main` changes don’t affect you until you explicitly update your reference.
+**Stage 3 — Provenance and Attestation.** OIDC deployments. Signed commits on `compliance-scope != none` repos. Build provenance attestations on release artifacts.
 
-This is identical to how package managers work: your project’s `main` branch is your production code; your `package.json` pins `"lodash": "4.17.21"` — not `"latest"` — because you don’t want lodash’s next release to unexpectedly break your app.
+**Stage 4 — Differentiated Policy.** Rulesets targeting additional custom properties. Stricter controls on `restricted` and `cjis` repos. Environment protection rules on prod deployments. AI-usage policy tightened for repos where AI-generated code is in scope.
 
-**Summary table:**
+**Stage 5 — Continuous Evidence.** Dashboards aggregating posture per repo. Automated audit evidence bundles. Compliance scope maps to a defined control set automatically. Posture visible to EISO without a ticket.
 
-|Role                               |Reference                      |Rule                                                  |
-|-----------------------------------|-------------------------------|------------------------------------------------------|
-|Producer (own repo)                |Your own `main`                |`main` = truth. Protect it. Require PRs. Tag releases.|
-|Consumer (calling shared workflows)|Another repo’s workflow        |Pin to their version tag, not their `@main`           |
-|Consumer (using shared modules)    |Another repo’s published module|Pin to a released version                             |
+Each stage is a COE agenda item. Each stage produces artifacts. We don’t start a stage until the prior one is stable.
 
-### 6.3 Branch Protection on `main`
+### 6.4 Interface with Enterprise Security (EISO)
 
-Every repo should protect `main` with at minimum:
+Two-way, explicit, no email-only requests:
 
-```
-Branch protection rules for main:
-  ✓ Require pull request before merging
-  ✓ Require 1+ approvals (2 for compliance-scoped repos)
-  ✓ Dismiss stale approvals when new commits are pushed
-  ✓ Require status checks to pass (security-scan, secret-scan, build, lint)
-  ✓ Require branches to be up to date before merging
-  ✓ Do not allow bypassing the above settings
-      (this applies to org owners too — no exceptions)
-```
+- **They publish:** required policies, required workflows, content exclusion lists, custom CodeQL queries, custom secret-scan patterns, approved AI-model list, Copilot policy settings.
+- **We publish:** compliance dashboards, evidence bundles, exception requests with reasoning, proposed standards for their review.
+- **Joint:** the responsibility matrix, ADRs for shared decisions, the DevSecOps COE agenda, the AI-usage monitoring plan.
 
 -----
 
-## 7. Inner Source — How Patterns Actually Spread
+## 7. Copilot Enterprise Strategy
 
-### 7.1 What We Publish
+### 7.1 Enterprise-Level Settings
 
-```
-Our Org (Enterprise Technology Services)
-├── Repository templates
-│   ├── tpl-sql-database-project
-│   ├── tpl-powershell-module
-│   ├── tpl-bicep-landing-zone-module
-│   ├── tpl-terraform-aws-module
-│   ├── tpl-terraform-azure-module
-│   ├── tpl-cloudformation-stack          (CloudFormation = AWS native IaC)
-│   ├── tpl-ansible-role                  (Ansible = config management / IaC)
-│   ├── tpl-salt-formula                  (Salt/SaltStack = on-prem IaC)
-│   ├── tpl-python-data-service
-│   ├── tpl-static-docs-site
-│   └── tpl-adr-repo
-│
-├── Reusable workflows (CI/CD building blocks)
-│   ├── sql-project-build-deploy.yml
-│   ├── powershell-module-test-publish.yml
-│   ├── bicep-lint-whatif-deploy.yml
-│   ├── terraform-plan-apply-opa.yml
-│   ├── cloudformation-validate-deploy.yml
-│   ├── ansible-lint-test.yml
-│   ├── security-scan-baseline.yml        (Gitleaks + Semgrep + PSScriptAnalyzer)
-│   ├── secret-scan-baseline.yml          (Gitleaks custom patterns)
-│   ├── iac-security-scan.yml             (Checkov + Trivy)
-│   ├── tag-validation.yml                (validates required tags)
-│   └── template-compliance-check.yml     (guardrail enforcement)
-│
-├── Shared modules
-│   ├── PowerShell shared module repo
-│   ├── Bicep module library
-│   ├── Terraform module registry (Azure + AWS)
-│   ├── Ansible role library
-│   └── Salt formula library
-│
-├── Approved MCP registry
-├── Copilot knowledge bases
-└── Platform docs site
-```
+Configured once, at the top:
 
-### 7.2 Versioning and Consumption
+- **Content exclusions** for credential files, regulated-data paths, and specific sensitive repos. Owned by EISO. Set at enterprise level so no org can relax them.
+- **Duplicate suggestion filter** on.
+- **Public code filter** per policy decision (recommend on for now; revisit).
+- **Copilot Chat model access** — which models are available to which orgs. Reasoning-heavy models (Claude Opus-class, GPT-5.x-class) available by default; specific orgs can request additions. Expect the model roster to keep evolving.
+- **Bring Your Own Key (BYOK)** — available in preview for Copilot Enterprise. Lets the Commonwealth supply API keys from Anthropic, OpenAI, Azure AI Foundry, etc., so AI model usage bills and data flows can be brought inside existing Commonwealth vendor agreements. Worth a dedicated ADR before enabling.
+- **Data residency and FedRAMP.** Copilot data residency (US and EU options) and FedRAMP-compliant deployments are available to enterprise customers; EISO should own the selection.
+- **Audit log streaming** for Copilot events alongside other GitHub events. Non-negotiable.
+- **Premium request budgets.** Copilot’s premium-request meter governs agent-mode, coding-agent, code-review, and advanced model usage. Plan allocations per org; publish guidance on model-per-task to keep routine work on lower-cost models.
 
-**As a producer:** Tag releases from `main`. Use semantic versioning (`v1.0.0`, `v1.1.0`, `v2.0.0`).
+### 7.2 Copilot Spaces — The Highest-Leverage Feature
 
-**As a consumer:** Reference specific version tags in workflow `uses:` and module imports. Update on your schedule after testing the new version. Document the update in a commit message or PR description.
+**Important update.** Copilot **Spaces** replaced **Knowledge Bases** on November 1, 2025. Older documentation still refers to “knowledge bases”; everywhere in this strategy, the modern equivalent is a Space. The migration path from existing knowledge bases to Spaces was released in late 2025 and should already have converted anything legacy the enterprise had.
 
-**Major version bumps** (v1 → v2) indicate breaking changes. Minor bumps (v1.0 → v1.1) are backward-compatible additions. Communicate breaking changes in the CHANGELOG and with advance notice.
+A **Space** is a curated container that Copilot grounds answers in. Compared to the old knowledge bases, Spaces:
 
-### 7.3 Inner Source Triage Rotation
+- Can include code, Markdown, JSON, images, file uploads, issues, and pull requests — not Markdown only.
+- Can be created by **any** Copilot user, not just organization admins. Admins control sharing scope.
+- Support per-Space custom instructions that are layered onto Chat turns using that Space.
+- Can be shared privately, with specific users, with a team, with the org, or publicly within the enterprise.
+- Auto-sync as the underlying GitHub sources change.
 
-Someone on our team owns triage of external contributions each sprint:
+Planned enterprise Spaces:
 
-- Acknowledge new issues within 3 business days
-- Review external PRs on shared platform repos
-- Keep the CONTRIBUTING.md current
-- Track and report adoption metrics to the COE
+- **EISO** publishes **Enterprise Security Standards** over their policy repos.
+- **Our org** publishes **Data Platform Standards**, **DevSecOps COE Patterns**, **Cloud Landing Zone Reference**.
+- **Enterprise Development** publishes **Common Application Frameworks**.
+- **CODE PA** publishes **Digital Experience Standards** (citizen-facing service patterns, PA.gov components).
+- **OA/OIT** seed: **Commonwealth ITP Reference** so developers can ask questions grounded in current policy.
 
------
+Anyone in Chat can reference a Space. A developer in an agency org drafting a SQL integration gets answers consistent with our standards. This replaces a lot of tribal knowledge. It also meaningfully reduces the “ask three people, get three answers” problem for agency consumers.
 
-## 8. Security Strategy
+### 7.3 Custom Instructions — Shape Every Suggestion
 
-### 8.1 Anchor Standards
+`.github/copilot-instructions.md` in a repo is auto-loaded into every Copilot Chat turn for that repo and influences code generation. Path-scoped `.instructions.md` files with `applyTo` frontmatter apply to specific globs (e.g., rules for `**/*.ps1` distinct from `**/*.bicep`).
 
-|Standard            |Full name                                 |How we apply it                                                                   |
-|--------------------|------------------------------------------|----------------------------------------------------------------------------------|
-|NIST SP 800-218     |Secure Software Development Framework     |Structures CI/CD security controls. Reusable workflows map to SSDF practices.     |
-|NIST SP 800-207     |Zero Trust Architecture                   |Shapes OIDC deployment auth, continuous verification, attestation.                |
-|NIST SP 800-53      |Security and Privacy Controls             |Translation layer for control mapping.                                            |
-|NIST SP 800-171     |Protecting CUI                            |Applies where Controlled Unclassified Information (CUI) is processed.             |
-|CJIS Security Policy|Criminal Justice Information Services     |Required for repos touching criminal justice data.                                |
-|CIS Benchmarks      |Center for Internet Security              |Platform, container, and cloud workload hardening.                                |
-|OWASP SAMM/ASVS     |Software Assurance Maturity + Verification|Appsec maturity measurement and verification bar.                                 |
-|FedRAMP             |Federal Risk and Authorization Management |Cloud service authorization baseline for federal-connected workloads.             |
-|StateRAMP           |State risk and authorization management   |State government cloud authorization — aligns with FedRAMP but state-administered.|
+Good instruction files are short, specific, and honest about constraints. We publish a catalog of them per archetype so teams can copy-paste and adapt.
 
-### 8.2 Tiered Adoption Model
+### 7.4 Prompt Files
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  TIER 1 — REQUIRED                                           │
-│  Set by Enterprise Security at enterprise level              │
-│  Applied via rulesets and required workflows                 │
-│  Cannot be turned off                                        │
-│  Examples: push protection, SSO, audit logging, CJIS rules  │
-├──────────────────────────────────────────────────────────────┤
-│  TIER 2 — RECOMMENDED                                        │
-│  Published by our org and the COE                            │
-│  Easy to adopt; adoption is measured and reported            │
-│  Examples: reusable workflows, templates, instruction files  │
-├──────────────────────────────────────────────────────────────┤
-│  TIER 3 — OPTIONAL                                           │
-│  Team-specific customization within guardrails               │
-│  Must not conflict with Tier 1 or Tier 2                     │
-│  Examples: team-specific prompts, additional lint rules      │
-└──────────────────────────────────────────────────────────────┘
-```
+`.github/prompts/*.prompt.md` define reusable prompts invokable from Chat. Examples worth publishing:
 
-### 8.3 Security Scanning — What Does What and Why
+- `/review-tsql` — checklist against a SQL file.
+- `/harden-powershell` — StrictMode, error handling, logging.
+- `/generate-adr` — scaffold an ADR in our format.
+- `/threat-model` — STRIDE-style first pass.
+- `/security-review` — walks a PR against the relevant baseline (800-218 practices, OWASP top 10).
+- `/map-to-itp` — given a proposed standard, suggest which Commonwealth ITP(s) it supports or references.
 
-This is the most important section to understand before configuring any pipeline. There are two separate problems, two separate tool families, and one common mistake: treating CodeQL as a comprehensive security scanner for all code types.
+### 7.5 Code Review, Coding Agent, and Mission Control
 
-**The two problems:**
+- **Copilot code review.** Enable org-wide, set as required on pilot repos first (low-risk: docs, ADRs, runbooks). Expand based on measured signal-to-noise.
+- **Coding Agent.** Assign a GitHub issue to Copilot; it works in the background and opens a PR. Start with doc repos and low-risk refactors. Establish trust before letting it touch production IaC.
+- **Mission Control.** Dashboard for steering multiple coding-agent tasks at once. Useful once a team routinely delegates several issues in parallel. Publish “how we use Mission Control” guidance when we have enough experience.
+- **Custom agents and agent skills.** Emerging extensibility surface that lets orgs define agents tuned to a specific workflow. Track what EISO is willing to approve for use with regulated data before our teams build on this.
 
-```
-PROBLEM 1: SECRETS AND CREDENTIALS IN CODE
-─────────────────────────────────────────────────────────────────
-Passwords, API keys, connection strings, certificates, tokens
-embedded in PowerShell scripts, SQL files, IaC templates,
-config files, YAML, JSON — anywhere a developer typed or
-pasted something they shouldn't have.
+### 7.6 Model Selection
 
-Tools: GitHub Secret Scanning, Push Protection, Gitleaks, TruffleHog
-These tools scan file CONTENT for patterns matching known
-credential formats. Language doesn't matter — they scan
-every file regardless of extension.
-
-PROBLEM 2: VULNERABLE CODE PATTERNS
-─────────────────────────────────────────────────────────────────
-Logic flaws, injection risks, insecure function usage, unsafe
-data handling patterns — vulnerabilities in how the code works,
-not in what strings are embedded in it.
-
-Tools: Semgrep, PSScriptAnalyzer, SonarQube, CodeQL (limited)
-These tools analyze code STRUCTURE and PATTERNS.
-Language matters — each tool covers specific languages.
-```
-
-**Why CodeQL is largely the wrong tool here:**
-
-CodeQL is GitHub’s semantic code analysis engine. It is excellent at finding vulnerabilities in C#, Java, JavaScript, Python, Go, Ruby, and Swift. It understands how data flows through a program and flags when untrusted input reaches a dangerous function.
-
-What CodeQL does not support:
-
-```
-CodeQL supported languages:
-  ✓  C / C++          ✓  Go
-  ✓  C#               ✓  Java / Kotlin
-  ✓  JavaScript /     ✓  Python
-     TypeScript        ✓  Ruby / Swift
-
-NOT supported by CodeQL:
-  ✗  PowerShell       ← primary scripting language in this enterprise
-  ✗  T-SQL / SQL      ← primary database language
-  ✗  Terraform HCL    ← primary cloud IaC
-  ✗  Bicep            ← Azure IaC
-  ✗  Ansible YAML     ← on-prem config management
-  ✗  Salt SLS         ← on-prem config management
-  ✗  Bash / Shell     ← automation scripts
-```
-
-Running CodeQL on a repo full of `.ps1` and `.sql` files returns zero findings — not because the code is clean, but because the tool skips those files entirely. **CodeQL stays in the toolset only for repos from Enterprise Development that contain C#, Python, or JavaScript.** It is not a default requirement for this environment.
-
-**The right tool for each language and concern:**
-
-```
-LANGUAGE / FILE TYPE    SECRET DETECTION        CODE ANALYSIS
-──────────────────────  ──────────────────────  ──────────────────────────
-PowerShell (.ps1/.psm1) GitHub Secret Scanning  PSScriptAnalyzer
-                        Push Protection         Semgrep (PS rules)
-                        Gitleaks
-
-T-SQL / SQL (.sql)      GitHub Secret Scanning  Semgrep (SQL rules)
-                        Push Protection         SQLFluff (quality)
-                        Gitleaks
-
-Terraform (.tf)         GitHub Secret Scanning  Checkov
-                        Push Protection         Trivy
-                        Gitleaks                tflint (provider rules)
-                                                OPA/Sentinel policy gate
-
-Bicep (.bicep)          GitHub Secret Scanning  Checkov
-                        Push Protection         bicep lint (built-in)
-                        Gitleaks
-
-CloudFormation (.yaml)  GitHub Secret Scanning  cfn-lint
-                        Push Protection         cfn-guard
-                        Gitleaks
-
-Ansible (.yml)          GitHub Secret Scanning  ansible-lint
-                        Push Protection         Semgrep (YAML rules)
-                        Gitleaks
-
-Salt (.sls)             GitHub Secret Scanning  salt-lint
-                        Push Protection         Semgrep (YAML/Jinja)
-                        Gitleaks
-
-C# / Python / JS        GitHub Secret Scanning  CodeQL ← appropriate here
-(Enterprise Dev only)   Push Protection         Semgrep
-                        Gitleaks
-```
-
-**How findings from all tools appear in one place:**
-
-GitHub’s code scanning framework accepts **SARIF** (Static Analysis Results Interchange Format — a standard output format for security tool findings) from any tool. Every scanner above outputs SARIF. All findings surface in the GitHub Security tab, the org-wide Security Overview, and stream to the SIEM via audit log. Enterprise Security gets a unified view.
-
-```
-SECURITY FINDING FLOW — ALL TOOLS → ONE DASHBOARD
-
-  GitHub Actions pipeline runs on every PR:
-  │
-  ├── GitHub Secret Scanning       (always on, GitHub native)
-  │   Finds: credentials, API keys, connection strings
-  │   Coverage: every file type, every language
-  │
-  ├── Push Protection              (always on, blocks at commit)
-  │   Prevents: secrets reaching the repo at all
-  │
-  ├── Gitleaks                     → SARIF → Security tab
-  │   Finds: custom patterns + history scanning
-  │   Coverage: every file type
-  │
-  ├── PSScriptAnalyzer             → SARIF → Security tab
-  │   Finds: PS security anti-patterns, credential misuse
-  │   Coverage: .ps1, .psm1, .psd1
-  │
-  ├── Semgrep                      → SARIF → Security tab
-  │   Finds: code vulnerabilities, custom org patterns
-  │   Coverage: PowerShell, SQL, Terraform, Ansible, YAML, + more
-  │
-  ├── Checkov                      → SARIF → Security tab
-  │   Finds: IaC misconfigurations
-  │   Coverage: Terraform, Bicep, CloudFormation, Ansible, Salt
-  │
-  ├── Trivy                        → SARIF → Security tab
-  │   Finds: container vulns, IaC issues, file system scan
-  │
-  ├── cfn-guard                    → SARIF → Security tab
-  │   Finds: CloudFormation policy violations (AWS)
-  │
-  └── CodeQL                       → SARIF → Security tab
-      Finds: code flow vulnerabilities
-      Coverage: C#, Python, JS ONLY (Enterprise Dev repos)
-
-  All findings → GitHub Security tab (per repo)
-              → GitHub Security Overview (org-wide)
-              → SIEM (via audit log streaming)
-              → Compliance dashboard (automated evidence)
-```
-
-### 8.4 Staged Security Rollout
-
-```
-Stage 1: Foundations (invisible to developers)
-  ✓ SSO + SCIM enforced
-  ✓ Audit log streaming → SIEM
-  ✓ Secret scanning enabled across all repos (GitHub native)
-  ✓ Push protection on (blocks secrets at commit time)
-  ✓ Dependabot alerts enabled
-  Exit criteria: all five active, no production breakage
-
-Stage 2: Baseline Code Scanning
-  ✓ Gitleaks in baseline security workflow (pilot 5 repos, evaluate mode)
-  ✓ PSScriptAnalyzer in workflow for all repos containing .ps1/.psm1
-  ✓ Semgrep in workflow for all repos (community rules + custom)
-  ✓ Checkov for all repos containing IaC
-  ✓ SARIF upload configured so all findings appear in Security tab
-  ✓ SBOM generation per build
-  ✓ Tag validation workflow
-  Exit criteria: >80% pilot repos clean, false-positive noise tuned
-
-Stage 3: Provenance and Attribution
-  ✓ OIDC federation for all cloud deployments
-  ✓ Signed commits on compliance-scoped repos
-  ✓ Build attestations on release artifacts
-  ✓ SLSA posture documented
-  Exit criteria: zero long-lived cloud credentials in Secrets
-
-Stage 4: Differentiated Policy
-  ✓ Rulesets targeting custom properties
-  ✓ Stricter controls on cjis/restricted repos
-  ✓ Environment protection rules on prod deployments
-  ✓ Template compliance checks for agency self-service
-  ✓ CodeQL added to Enterprise Dev repos with supported languages
-  Exit criteria: all repos tagged, rulesets enforcing
-
-Stage 5: Continuous Evidence
-  ✓ Per-repo posture dashboard live
-  ✓ Automated evidence bundles
-  ✓ Control-set mapping by compliance-scope
-  ✓ Audit cycle in days, not weeks
-```
-
-### 8.5 Two-Way Interface with Enterprise Security
-
-```
-ENTERPRISE SECURITY publishes:      OUR ORG consumes:
-  Required policies              ──►  Applied via rulesets
-  Required workflows             ──►  Called from all repos
-  Content exclusion lists        ──►  Enterprise-level Copilot
-  Custom Semgrep rules           ──►  Security scan workflow config
-  Custom Gitleaks patterns       ──►  Secret scan workflow config
-  Custom secret-scan patterns    ──►  Enterprise-level scan
-
-OUR ORG publishes:                  ENTERPRISE SECURITY consumes:
-  Compliance dashboards          ──►  Posture visibility
-  Evidence bundles               ──►  Audit package
-  Exception requests             ──►  With reasoning attached
-  Proposed standards             ──►  For their review/approval
-
-Jointly maintained:
-  Responsibility matrix ↔ ADR process ↔ Handoff runbooks
-```
+Strongest reasoning model for architecture, threat modeling, debugging. Faster models for boilerplate. Not set-and-forget — switch per task. The COE publishes guidance on when to use which, and updates it as the model roster changes (it has been changing roughly quarterly).
 
 -----
 
-## 9. Copilot Enterprise Strategy
+## 8. MCP — Model Context Protocol at Enterprise Scale
 
-### 9.1 Enterprise-Level Settings
+MCP lets Copilot (and other AI clients) connect to real systems — GitHub, SQL, Azure, AWS, CMDB, ticketing, observability. Done well, it transforms Chat from a generic assistant into one that knows our environment. Done poorly, it sprays credentials and creates shadow integrations.
 
-- **Content exclusions** — credential files, regulated-data paths. Owned by Enterprise Security. Cannot be relaxed by individual orgs.
-- **Audit log streaming** — every Copilot interaction logged.
-- **Model access** — which models are available; approved at enterprise level.
+### 8.1 Central Hosting Over Local Configuration
 
-### 9.2 Knowledge Bases
+We don’t want every developer running their own SQL MCP against dev instances with personal credentials.
 
-|Knowledge Base            |Published by       |Repos included                               |
-|--------------------------|-------------------|---------------------------------------------|
-|Security Standards        |Enterprise Security|Policy repos, required workflow repos        |
-|Data Platform Standards   |Our org            |SQL automation, backup pipelines, DBA ADRs   |
-|DevSecOps COE Patterns    |Our org            |COE decisions, reusable workflows, templates |
-|Cloud Landing Zone        |Our org            |Azure/AWS landing zone, control mappings     |
-|On-Prem Platform Standards|Our org            |VMware, Salt, Ansible runbooks and patterns  |
-|Common App Frameworks     |Enterprise Dev     |Libraries, reference implementations         |
-|State Compliance Standards|Our org + Ent. Sec.|CJIS, NIST control mapping, tagging standards|
+The pattern:
 
-### 9.3 Instruction Files and Prompt Files
+- **Remote MCP servers** (HTTP / Streamable HTTP transport) for high-value targets, authenticated via SSO/OIDC. Developers configure a URL; the server authorizes based on their identity.
+- **Local MCP servers** only for lightweight, non-sensitive things (filesystem scoped to a repo, public-documentation fetch).
+- **Prohibited local servers** for anything touching production or regulated data.
 
-See the Team Setup Guide for full examples. Every repo in our org should have `.github/copilot-instructions.md` tuned to its archetype. The COE publishes a library of instruction file templates per archetype (SQL, PowerShell, Bicep, Terraform, Ansible, Salt).
+### 8.2 Approved MCP Registry
 
------
+A repo in our org publishes the list of approved MCP servers: endpoint, scopes, data classification, tier (freely usable / requires request / prohibited), owner, security review status, relevant ITP reference where applicable.
 
-## 10. On-Premises IaC — VMware, Salt, and Ansible
+Developers discover MCP through this registry, not through random npm packages. This is a DevSecOps COE deliverable — probably one of the first, because it fills a gap nobody else has filled. It also short-circuits a realistic supply-chain risk: a malicious npm MCP package with a plausible name could otherwise leak credentials before anyone noticed.
 
-On-premises infrastructure in our enterprise is managed through the VMware Broadcom stack. This section defines how on-prem IaC integrates into the same DevSecOps pipeline as cloud IaC.
+### 8.3 Starter Set of MCP Servers
 
-### 10.1 The On-Premises Stack
+Prioritized for our roles and the broader enterprise:
 
-**VMware Broadcom Environment:**
+|Server                                                        |Priority     |Why                                                                                                                                                               |
+|--------------------------------------------------------------|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|**GitHub MCP (official, remote)**                             |High         |Issues, PRs, Actions, code search across the enterprise. Hosted at `https://api.githubcopilot.com/mcp/`. Supports read-only mode and dynamic toolsets via headers.|
+|**Azure MCP (`@azure/mcp`)**                                  |High         |Resource Graph, policy, cost. Official Microsoft package.                                                                                                         |
+|**Microsoft SQL MCP** (approved package TBD)                  |High         |Schema, read-only queries, index/plan introspection. Several community implementations; the COE picks one and pins it.                                            |
+|**AWS MCP**                                                   |High         |Equivalent for AWS workloads.                                                                                                                                     |
+|**Filesystem MCP (`@modelcontextprotocol/server-filesystem`)**|Medium       |Scoped local doc access.                                                                                                                                          |
+|**Fetch / Web MCP**                                           |Medium       |Pull vendor docs during Chat.                                                                                                                                     |
+|**Atlassian / Confluence MCP**                                |Medium       |Jira, ADR storage (where Confluence is used).                                                                                                                     |
+|**Kusto / ADX MCP**                                           |Medium       |Telemetry queries.                                                                                                                                                |
+|**Terraform MCP**                                             |Medium       |Registry lookups, module introspection.                                                                                                                           |
+|**CMDB / ServiceNow MCP**                                     |High (future)|Environment context; critical once we wire in Commonwealth asset records.                                                                                         |
 
-```
-On-Prem IaC Technology Stack
-│
-├── VMware vSphere / vCenter
-│   └── VM provisioning, compute management
-│       IaC tooling: Terraform VMware Provider
-│                    VMware Aria Automation (formerly vRealize Automation)
-│                    PowerCLI (PowerShell-based VMware management)
-│
-├── VMware NSX
-│   └── Software-defined networking, micro-segmentation, firewall rules
-│       IaC tooling: Terraform NSX-T Provider
-│                    Ansible VMware NSX collection
-│
-├── VMware Aria Automation (formerly vRealize Automation / vRA)
-│   └── Self-service cloud portal for on-prem resources
-│       Infrastructure blueprints (templates for VM provisioning)
-│       Integration with Salt and Ansible for configuration management
-│
-├── SaltStack (Salt / Salt Project)
-│   └── Configuration management, remote execution, orchestration
-│       Formula library (reusable Salt state files)
-│       Salt Reactor for event-driven automation
-│       Integration: Aria Automation → Salt for post-provision config
-│
-└── Ansible
-    └── Agentless configuration management and application deployment
-        Role library (reusable Ansible roles)
-        Ansible Navigator + Execution Environments (containerized runs)
-        Integration: Aria Automation → Ansible for app configuration
-```
+Start read-only. Elevate only when needed. Non-production targets first. Promote to higher environments slowly.
 
-**Key distinction:**
+> **Note on the SQL MCP.** At the time of writing there is no single canonical Microsoft-published npm package for a SQL Server MCP server. Multiple community implementations exist with overlapping feature sets. The COE picks one, records the rationale in an ADR, and pins the version in the Approved MCP Registry. Do not install SQL MCP servers from search results without consulting the registry.
 
-- **Salt** — agent-based (Salt minions installed on managed nodes), better for real-time state enforcement and large-scale fleets. Strong on-prem VMware integration.
-- **Ansible** — agentless (uses SSH/WinRM), better for one-time provisioning tasks and application deployment. Better for cross-platform and cloud-adjacent workflows.
-- **Use both** where they complement each other; don’t pick one to replace the other.
+### 8.4 Security Review for MCP
 
-### 10.2 IaC Pipeline for On-Prem Deployments
-
-```
-ON-PREM INFRASTRUCTURE PIPELINE
-
-  Developer/Engineer writes:
-    Terraform plan (.tf files)     → VMware vSphere + NSX resources
-    Salt formula (.sls files)      → Configuration state for managed nodes
-    Ansible role/playbook (.yml)   → Application and OS configuration
-
-  Pipeline (GitHub Actions):
-    ┌─────────────────────────────────────────┐
-    │ Lint + validate                         │
-    │   terraform validate                    │
-    │   terraform fmt --check                 │
-    │   tflint (Terraform linter)             │
-    │   ansible-lint                          │
-    │   salt-lint (Salt state linter)         │
-    └──────────────┬──────────────────────────┘
-                   │
-    ┌──────────────▼──────────────────────────┐
-    │ Security scan                           │
-    │   Checkov (Terraform IaC scan)          │
-    │   Trivy (file system + IaC scan)        │
-    │   KICS (infrastructure security scan)   │
-    └──────────────┬──────────────────────────┘
-                   │
-    ┌──────────────▼──────────────────────────┐
-    │ Plan / dry-run                          │
-    │   terraform plan → output as PR comment │
-    │   ansible-playbook --check              │
-    │   salt-call state.show_sls (dry run)    │
-    └──────────────┬──────────────────────────┘
-                   │ (PR approval + manual approval for prod)
-    ┌──────────────▼──────────────────────────┐
-    │ Apply (after merge to main + approval)  │
-    │   terraform apply                       │
-    │   Aria Automation blueprint trigger     │
-    │   Ansible playbook run                  │
-    │   Salt highstate                        │
-    └──────────────┬──────────────────────────┘
-                   │
-    ┌──────────────▼──────────────────────────┐
-    │ Verify + evidence                       │
-    │   Terraform state validation            │
-    │   Salt mine / grains verification       │
-    │   Compliance evidence stored            │
-    └─────────────────────────────────────────┘
-```
-
-### 10.3 VMware and GitHub Actions Integration
-
-GitHub Actions runners for on-prem workloads run as **self-hosted runners** (GitHub-hosted runners can’t reach your internal VMware network):
-
-```
-Self-Hosted Runner Setup:
-  Runners deployed as VMs in vSphere
-  Register with GitHub Actions (runner token, scoped to org)
-  Label runners by capability: [vmware, on-prem, salt, ansible]
-  Workflow references runners by label:
-    runs-on: [self-hosted, vmware, on-prem]
-
-Security for self-hosted runners:
-  ✓ Runners run in dedicated VM cluster (not shared with prod workloads)
-  ✓ Network segmented: can reach vCenter/NSX, cannot reach internet
-  ✓ Runner identity managed via gMSA (Group Managed Service Account)
-  ✓ Ephemeral runners (each job gets a fresh runner, then it's deleted)
-  ✓ Runner logs streamed to SIEM
-```
-
-### 10.4 Terraform for VMware — Provider Reference
-
-```hcl
-# Terraform VMware vSphere provider
-terraform {
-  required_providers {
-    vsphere = {
-      source  = "hashicorp/vsphere"
-      version = "~> 2.6"   # Pin to minor version
-    }
-    nsxt = {
-      source  = "vmware/nsxt"
-      version = "~> 3.3"
-    }
-  }
-}
-
-# State stored in a secure backend (not local files)
-# Options: Terraform Cloud, S3+DynamoDB, Azure Blob with lock
-```
+Each approved MCP server has a lightweight security review recorded: what it can read, what it can write, how it authenticates, where logs go, who owns it, which ITPs and NIST control families it touches. EISO signs off on Tier 1 (freely usable) classifications.
 
 -----
 
-## 11. Cloud IaC Standardization by Platform
+## 9. VS Code and Developer Experience
 
-Each cloud platform has a preferred native IaC tooling and a cross-platform alternative. We standardize so that every deployment method has a known pipeline, known guardrails, and known compliance posture.
+Covered in full in the Team Setup Guide. Summary here so COE members have the vocabulary:
 
-### 11.1 Platform Matrix
-
-|Platform            |Native IaC                          |Cross-Platform IaC          |Our Standard                                                                                         |
-|--------------------|------------------------------------|----------------------------|-----------------------------------------------------------------------------------------------------|
-|Microsoft Azure     |Bicep (preferred), ARM templates    |Terraform                   |Bicep for new; Terraform for multi-cloud or existing Terraform estate                                |
-|Amazon Web Services |CloudFormation, CDK                 |Terraform                   |Terraform for new; CloudFormation for AWS-native services where Terraform coverage is weak           |
-|VMware On-Premises  |Aria Automation Blueprints, PowerCLI|Terraform (vsphere provider)|Terraform for vSphere+NSX; Aria Automation for self-service portal                                   |
-|Multi-Cloud / Hybrid|—                                   |Terraform                   |Terraform as the standard cross-platform tool when managing resources on 2+ platforms in one pipeline|
-
-**Why not one tool for everything?** Bicep has deeper Azure feature coverage and faster new-resource support than Terraform’s azurerm provider. CloudFormation is tightly integrated with AWS IAM and native services. Forcing everything through Terraform means being behind on new platform features. We use the right tool per platform and standardize the *pipeline pattern*, not the syntax.
-
-### 11.2 Azure Deployment Pipeline
-
-```
-Azure IaC Pipeline (Bicep or Terraform)
-
-  Code (Bicep .bicep or Terraform .tf)
-    │
-    ├── Lint: bicep lint / terraform fmt + validate
-    ├── Security: Checkov (bicep/terraform), tflint for Azure rules
-    ├── What-if: az deployment group what-if → PR comment
-    │            terraform plan → PR comment
-    │
-    ├── PR Approval: CODEOWNERS on /infra/ paths
-    │               Required: platform team + security team review
-    │
-    ├── Merge to main (triggers deploy job)
-    │
-    ├── Environment protection: required manual approval for prod
-    │
-    ├── Deploy: az deployment group create (Bicep)
-    │           terraform apply (Terraform)
-    │           Auth: OIDC only (no stored credentials)
-    │
-    └── Evidence: deployment log, SBOM, attestation stored
-
-Mandatory tags on every Azure resource (see §14):
-  environment, owning-team, agency-code, data-classification,
-  cost-center, compliance-scope, lifecycle
-```
-
-### 11.3 AWS Deployment Pipeline
-
-```
-AWS IaC Pipeline (Terraform or CloudFormation)
-
-  Code (.tf or CloudFormation .yaml/.json templates)
-    │
-    ├── Lint: tflint (AWS rules) / cfn-lint (CloudFormation linter)
-    ├── Security: Checkov (terraform+cfn), cfn-guard (AWS rule enforcement)
-    │            cfn-guard is critical for guardrail enforcement (see §13)
-    │
-    ├── Plan/Change set: terraform plan / CloudFormation change set
-    │                    Output posted to PR
-    │
-    ├── PR Approval: CODEOWNERS, required reviews
-    │
-    ├── Merge to main
-    │
-    ├── Environment protection: manual approval for prod
-    │
-    ├── Deploy: terraform apply / aws cloudformation deploy
-    │           Auth: OIDC (GitHub Actions → AWS IAM Identity Center)
-    │
-    └── Evidence: deployment log, SBOM, stack tags verified
-
-AWS Config rules enforced after deployment:
-  Verify required tags present
-  Verify required security controls active
-  Alert on drift from approved state
-```
-
-### 11.4 Consistency Across Platforms
-
-Regardless of which platform or IaC tool:
-
-- Pipeline structure is the same (lint → security → plan → approve → deploy → verify)
-- OIDC authentication (no long-lived credentials)
-- Required tags validated before deployment completes
-- Evidence (SBOM, attestation, deployment log) stored per deployment
-- Post-deployment drift detection enabled
+- **Profiles** — bundles of extensions, settings, and keybindings per domain. Keep each profile lean.
+- **Multi-root workspaces** — `.code-workspace` files grouping repos by coherent problem space, checked into a shared repo so everyone gets the same view.
+- **Per-domain workspaces** (stable): data platform, cloud governance, DevSecOps COE, enterprise architecture.
+- **Cross-org workspaces** (short-lived): security integration, agency onboarding, COE workstreams.
+- **WSL2** selectively — for MCP servers, container scans, IaC scanners that run better on Linux.
+- **Core extensions** — Copilot, Copilot Chat, GitLens, Error Lens, EditorConfig, plus domain-specific extensions per profile.
+- **`.vscode/mcp.json` root key is `"servers"`** (not `"mcpServers"` — that’s the Claude Desktop / Cursor convention). This is the most common setup bug; calling it out here saves support time.
 
 -----
 
-## 12. Customer / Agency Deployment Process
+## 10. Templates and Golden Paths
 
-Customer and agency orgs need a path to build and deploy their own cloud resources that is:
+Templates are the main vehicle for pattern adoption.
 
-- **Compliant** — meets enterprise security standards automatically
-- **Autonomous** — they can move without waiting for us on every change
-- **Guardrailed** — they can’t accidentally (or intentionally) break required controls
-- **Auditable** — every deployment is traceable and evidenced
+Planned repository templates:
 
-### 12.1 The Self-Service Model
+- `tpl-sql-database-project` — SQL Database Project with build, deploy, lint workflows.
+- `tpl-powershell-module` — PowerShell module with Pester, PSScriptAnalyzer, publish workflow.
+- `tpl-bicep-landing-zone-module` — Bicep module with what-if, lint, policy test.
+- `tpl-terraform-aws-module` — Terraform module with tflint, tfsec, plan preview.
+- `tpl-python-data-service` — Python service with pytest, ruff, Trivy.
+- `tpl-static-docs-site` — MkDocs or similar, Pages-deployed.
+- `tpl-adr-repo` — ADR collection with numbered decision files.
 
-```
-CUSTOMER/AGENCY SELF-SERVICE DEPLOYMENT FLOW
+Each template includes:
 
-  Agency team writes IaC (CloudFormation, Bicep, Terraform)
-  in their own repo within the GitHub enterprise
-        │
-        ▼
-  Template compliance check runs automatically
-  (validates against enterprise-approved base templates)
-  [see §13 for guardrail details]
-        │
-        ├── PASS: Proceed to security scan
-        └── FAIL: PR blocked with specific violations listed
-                  Agency must correct before proceeding
-        │
-        ▼
-  Security scan (Checkov, tflint, cfn-guard)
-  Tag validation (required tags present and valid)
-        │
-        ├── PASS: Plan/what-if runs, posted to PR
-        └── FAIL: PR blocked, specific issues listed
-        │
-        ▼
-  Plan/what-if output reviewed by agency team
-  PR approval: agency team lead + (auto-requested) our platform team
-               for any change touching networking or IAM resources
-        │
-        ▼
-  Merge to main (triggers deployment pipeline)
-        │
-        ▼
-  DEVELOPMENT / TEST ENVIRONMENTS:
-    Automatic deployment after merge
-    No additional approval required
-    Deployment logged and evidence stored
-        │
-        ▼ (after testing, promote via separate PR/pipeline)
-  PRODUCTION ENVIRONMENT:
-    Requires manual approval (GitHub Environment protection)
-    Approver: agency tech lead + our platform team on-call
-    Time window enforced (deployments only during defined hours)
-    Full evidence package generated and stored
-        │
-        ▼
-  Post-deployment:
-    Drift detection (AWS Config, Azure Policy)
-    Alert if deployed state diverges from approved template
-    Compliance evidence stored for audit
-```
+- Wired reusable workflows.
+- `.github/copilot-instructions.md` tuned to the archetype.
+- `.vscode/extensions.json` and `.vscode/settings.json` so devs get the right experience on open.
+- `.vscode/mcp.json` seeded with safe-to-share servers for the archetype.
+- `CODEOWNERS` placeholder with guidance.
+- `README.md` with “when to use this template.”
+- `SECURITY.md` linking to the relevant ITP and NIST control mappings.
 
-### 12.2 What “Autonomy” Means
-
-Autonomy does not mean unconstrained. It means agencies can:
-
-- Write their own application code and configuration
-- Choose which approved template to build on
-- Deploy to their environments on their schedule
-- Modify resources within the bounds of the template
-- Open issues against our platform team for new capabilities
-
-Autonomy does **not** mean:
-
-- Disabling required security controls
-- Bypassing tag requirements
-- Removing audit logging from their environments
-- Deploying to production without approval
-- Using unapproved base images or modules
-
-This distinction is enforced by guardrails (§13), not by trust.
-
-### 12.3 Environment Tiers for Agencies
-
-```
-AGENCY ENVIRONMENT TIERS
-
-Sandbox / Exploration
-  Purpose: Learning, experimentation, proof-of-concept
-  Controls: Basic (tag validation, no sensitive data)
-  Approval: Automatic deployment on PR merge
-  Cost: Spend limit enforced at cloud account level
-
-Development / Test
-  Purpose: Active development, integration testing
-  Controls: Standard (all security scans, required tags)
-  Approval: Automatic after checks pass
-  Cost: Budget alert at 80%, hard limit at 100%
-
-Pre-Production / Staging
-  Purpose: Final validation before production
-  Controls: Full production controls applied
-  Approval: Agency tech lead approval required
-  Cost: Budget managed same as production
-
-Production
-  Purpose: Live citizen-facing or operational systems
-  Controls: Full (all scans, CJIS if applicable, drift detection)
-  Approval: Agency tech lead + our platform on-call
-  Deployment window: Defined schedule (e.g., Tue/Thu 10am-2pm)
-  Cost: Budget with hard stop and alert chain
-```
+A small CLI (or scripted scaffold) called something like `pa-devsec new <archetype> <name>` can create repos from templates, apply custom properties, and register in the docs site. Not required for Stage 1 — templates alone work. The CLI is a Stage 3 or Stage 4 addition.
 
 -----
 
-## 13. Template Guardrails and Policy Enforcement
+## 11. Telemetry, Evidence, and Audit
 
-Agencies and teams can customize their deployments, but required controls cannot be removed or modified outside the bounds of the enterprise template. This is enforced in the pipeline, not just documented in policy.
+EISO needs evidence; auditors need evidence; we need visibility. The pattern that replaces manual requests:
 
-### 13.1 How Guardrails Work
+- **Audit log streaming** to the enterprise SIEM (one-time enterprise-level setting). Include Copilot and Copilot CLI events.
+- **OIDC-based cloud auth** from GitHub Actions — deployments attributable to specific workflow runs.
+- **SBOMs and build provenance attestations** generated by default from reusable workflows.
+- **Compliance dashboard** — a scheduled workflow that queries the GitHub API and writes to an internal site. Shows per-repo posture against baselines. EISO consumes this instead of pinging us.
+- **AI-usage visibility** — Copilot usage metrics (now including CLI activity) feed into the compliance dashboard so EISO can see where AI tooling is active.
 
-The enterprise publishes **base templates** — IaC starting points with required controls built in. Agencies extend the templates; they cannot delete required blocks.
-
-```
-GUARDRAIL ENFORCEMENT MODEL
-
-  Enterprise publishes base template:
-    /templates/azure-agency-landing-zone.bicep
-    /templates/aws-agency-account-foundation.tf
-    /templates/vmware-agency-vm-standard.tf
-
-  Agency forks/extends the template:
-    They add their application resources
-    They adjust parameters (VM size, region, etc.)
-    They CANNOT remove:
-      - Required security groups / NSGs (Network Security Groups)
-      - Audit logging configuration
-      - Encryption settings
-      - Required tags
-      - Mandatory security controls
-
-  Enforcement mechanism:
-    Policy-as-code (cfn-guard / OPA / Azure Policy)
-    runs in the PR pipeline BEFORE any deployment
-    and BLOCKS the PR if required blocks are absent or modified
-```
-
-### 13.2 AWS — cfn-guard Rules Example
-
-```
-# cfn-guard rule: S3 buckets must have encryption and logging
-
-rule s3_bucket_encryption_required {
-  when AWS::S3::Bucket EXISTS {
-    Properties.BucketEncryption EXISTS
-    Properties.BucketEncryption.ServerSideEncryptionConfiguration[*]
-      .ServerSideEncryptionByDefault.SSEAlgorithm == "AES256"
-      OR "aws:kms"
-  }
-}
-
-rule s3_bucket_logging_required {
-  when AWS::S3::Bucket EXISTS {
-    Properties.LoggingConfiguration EXISTS
-  }
-}
-```
-
-### 13.3 Azure — Azure Policy and Bicep Linting
-
-Azure Policy (a service that evaluates Azure resources against rules) can enforce at deployment time:
-
-- Require specific tags on all resources
-- Require encryption on storage accounts
-- Require private endpoints (no public internet exposure)
-- Deny creation of resources not on the approved SKU (pricing tier) list
-
-These policies are assigned at the Management Group or Subscription level — they apply regardless of how the resource was created (portal, CLI, Bicep, Terraform).
-
-### 13.4 Terraform — Sentinel and OPA Gates
-
-```
-TERRAFORM POLICY GATE (OPA example)
-
-  Policy: all resources must have required tags
-
-  package terraform.tagging
-
-  required_tags := {
-    "environment", "owning-team", "agency-code",
-    "data-classification", "compliance-scope"
-  }
-
-  deny[msg] {
-    resource := input.resource_changes[_]
-    resource.change.actions[_] == "create"
-    tag_keys := {k | resource.change.after.tags[k]}
-    missing := required_tags - tag_keys
-    count(missing) > 0
-    msg := sprintf("Resource %v missing required tags: %v",
-                   [resource.address, missing])
-  }
-
-Policy gate runs during terraform plan:
-  Pass → plan output posted to PR, deployment can proceed
-  Fail → PR blocked, missing tags listed with remediation guidance
-```
-
-### 13.5 Drift Detection
-
-Deployment is only the beginning. Post-deployment:
-
-- **AWS Config** — continuously evaluates deployed resources against rule sets. Alerts on drift.
-- **Azure Policy** — compliance scan runs continuously. Non-compliant resources are reported.
-- **Terraform state** — periodic `terraform plan` in read-only mode detects manual changes (out-of-band changes that weren’t made through IaC).
-
-Drift alerts go to:
-
-1. Agency’s designated contact
-1. Our platform team Slack/Teams channel
-1. SIEM (Security Information and Event Management) for audit trail
+This is an investment that pays compounding returns. Every audit cycle after it’s built is dramatically shorter.
 
 -----
 
-## 14. Tagging Standards
+## 12. The DevSecOps COE — How It Runs
 
-Tags are how cloud resources are attributed, governed, audited, and billed. tags must satisfy: cost allocation (legislative budget accountability), security classification (CJIS, HIPAA, etc.), operational management, and audit requirements.
+The COE fails when it produces slides without code. The COE succeeds when every meeting moves at least one artifact forward.
 
-### 14.1 Why Tags Matters
+### 12.1 Outputs (in priority order)
 
-must demonstrate:
+1. **ADRs** in a shared repo. One decision per ADR, numbered, immutable once accepted, superseded only by another ADR.
+1. **Standards documents** referencing the ADRs. Checklists, not essays.
+1. **Reference implementations** — real repos showing standards in action.
+1. **Reusable workflows and templates** making the standards the path of least resistance.
+1. **Copilot Spaces** mirroring the published standards so developers can ask questions against them.
+1. **Adoption measurements** — percentage of repos using required workflows, percentage with instruction files, time-to-onboard a new repo, percentage with correct `compliance-scope` tagging.
 
-- **Legislative accountability** — every dollar of cloud spend attributed to a budget line
-- **Compliance evidence** — which resources contain which classes of data
-- **Audit trails** — who deployed what, when, and under which authority
-- **Security posture** — classification level determines required controls
+### 12.2 Meeting Cadence
 
-Un-tagged or incorrectly-tagged resources fail audit. They may also fail to trigger required security controls that are applied by tag.
+- **Weekly working session** — the people actually producing artifacts. 45 minutes. Agenda is the artifact backlog.
+- **Biweekly review** — representatives from each org. What shipped, what’s next, what needs a decision.
+- **Monthly showcase** — open to anyone in the enterprise. Demonstrates new templates, workflows, or patterns. Builds adoption by making the work visible.
 
-### 14.2 Required Tags (All Resources)
+### 12.3 Artifacts Before Opinions
 
-|Tag Key              |Required Values                                            |Definition                                           |
-|---------------------|-----------------------------------------------------------|-----------------------------------------------------|
-|`environment`        |sandbox, dev, test, staging, prod                          |Lifecycle stage. Determines control level.           |
-|`agency-code`        |State-assigned agency identifier                           |Which agency owns this resource. Billing attribution.|
-|`department-code`    |Department within the agency                               |Sub-attribution for large agencies                   |
-|`cost-center`        |Budget line code                                           |Legislative budget attribution                       |
-|`owning-team`        |Team identifier                                            |Operational contact                                  |
-|`data-classification`|public, internal, confidential, restricted                 |Sensitivity level. Determines security controls.     |
-|`compliance-scope`   |none, cjis, hipaa, pci, sox, fisma, stateramp              |Regulatory requirements. Determines audit controls.  |
-|`project-name`       |Project or program name                                    |Initiative attribution                               |
-|`lifecycle`          |active, maintenance, scheduled-decommission, decommissioned|For resource management and cleanup                  |
-|`created-by`         |Pipeline identifier or user (automated preferred)          |Audit trail for provisioning                         |
-|`created-date`       |ISO 8601 date (YYYY-MM-DD)                                 |Audit trail                                          |
-|`iac-managed`        |true, false                                                |Whether resource is managed by IaC (and which tool)  |
-|`iac-repo`           |GitHub repo URL                                            |Link back to the source of truth                     |
+A proposal in the COE must include either a draft ADR or a prototype repo. Opinions without artifacts get parked until they have one. This keeps discussion grounded.
 
-### 14.3 CJIS-Specific Tag Requirements
+### 12.4 Formalization Path
 
-Any resource where CJIS-governed data may be processed, stored, or transmitted requires additional tags:
-
-|Tag Key              |Required Values                   |Purpose                          |
-|---------------------|----------------------------------|---------------------------------|
-|`cjis-data-type`     |chi, nlets, ncic, biometric, other|Type of criminal justice data    |
-|`cjis-agency-ori`    |ORI number (FBI-assigned)         |Originating agency identifier    |
-|`cjis-audit-category`|direct, indirect, none            |Level of CJIS audit requirement  |
-|`data-residency`     |state-name, CONUS, federal        |Where data must physically reside|
-
-### 14.4 Tag Validation Pipeline
-
-Every deployment pipeline includes a tag validation step. It runs before the plan and blocks the pipeline if required tags are missing or use invalid values.
-
-```
-Tag validation flow:
-  1. Extract tags from IaC plan output
-  2. Check: all required tags present?
-     → NO: fail with list of missing tags and valid values
-  3. Check: all values valid (from approved value lists)?
-     → NO: fail with invalid tag and valid options
-  4. Check: data-classification and compliance-scope consistent?
-     → CJIS-tagged data must have data-classification = restricted
-  5. Check: iac-repo points to the actual calling repo?
-     → NO: fail (prevents tag spoofing)
-  6. PASS: continue to security scan
-```
-
-### 14.5 Cost Allocation and Reporting
-
-Tags feed:
-
-- **Cloud billing dashboards** — spend by agency, department, project, environment
-- **Budget alerts** — per agency-code + environment combination
-- **Chargeback** — agencies with self-managed cloud billed based on agency-code tag
-- **Legislative reports** — annual cloud spend report broken down by agency and program
+The COE currently runs as an informal community effort. Formalizing it — charter, named roles, budgeted time allocation from each participating org — is itself a COE agenda item (and a candidate ADR-0002 after adopting this strategy as ADR-0001). Until formalized, we keep momentum by producing artifacts; once formalized, we can commit to larger work like cross-org required rulesets.
 
 -----
 
-## 15. Reference Models from Leading States
+## 13. Handoff Plan for Current Crossover
 
-Several states have implemented substantial portions of what we are building. Their experiences — including documented failures — are a valuable reference. We study them to learn and then go further.
+Acknowledging: our org currently holds GitHub tenancy admin and parts of the security policy role. Long-term, pieces of this belong with EISO. Short-term, we’re stewards.
 
-### 15.1 Key State References
+**What we do now:**
 
-**Colorado — OIT (Office of Information Technology)**
+- Act as admin transparently. Every enterprise-level change logged in a decision log visible to EISO.
+- Pair on changes. EISO is included in major configuration decisions even when they don’t have the click rights.
+- Document handoffs proactively. When a responsibility logically belongs with EISO, we write the runbook now so the handoff is a paperwork exercise, not an archaeology exercise.
 
-- Early cloud-first policy with centralized procurement and standardized landing zones
-- Established shared services model for cloud infrastructure
-- Lesson learned: centralized cloud brokerage created bottlenecks; they moved to a federated model with guardrails — which is what our architecture does
+**What we move first (once EISO is staffed for it):**
 
-**California — CDT (California Department of Technology)**
+- Content exclusion list ownership.
+- Required ruleset ownership.
+- Custom CodeQL queries and secret-scan patterns.
+- Copilot policy settings (including BYOK, data residency, model availability).
 
-- “Cloud Smart” strategy: not cloud-first but cloud-right
-- Statewide security baseline applied through policy-as-code
-- Lesson learned: agencies with no prior cloud experience need more hand-holding than a golden path alone provides — need the managed/hybrid/self-sufficient tiering we’ve built into §12
+**What we keep:**
 
-**Virginia — VITA (Virginia Information Technologies Agency)**
+- Org-level configuration for our own org.
+- Recommended (non-required) workflows and templates.
+- The DevSecOps COE secretariat.
 
-- Managed services model with strong central governance
-- Shared cloud environment with per-agency cost allocation
-- Lesson learned: tagging standards implemented late caused retroactive pain — implement tagging on day one (§14 exists because of this lesson)
+**What stays shared long-term:**
 
-**Michigan — DTMB (Department of Technology, Management and Budget)**
-
-- Centralized GitHub Enterprise with org-per-agency model
-- Security policy-as-code with automated compliance evidence
-- Closest to our architecture; their published guidance is worth reading
-
-**Utah — DTS (Division of Technology Services)**
-
-- Early DevSecOps adoption with a COE model similar to ours
-- Reusable workflow library published to all agencies
-- Lesson learned: COE without executive sponsorship stalls — our COE needs visible leadership backing, not just technical advocates
-
-**Washington — WaTech**
-
-- CJIS-compliant cloud deployment process for law enforcement agencies
-- CJIS tagging and control automation (informs §14.3)
-- Published their CJIS cloud alignment guide — worth adopting as a reference
-
-### 15.2 Where We Go Further
-
-What most of these states have not yet fully implemented:
-
-- **MCP integration** — AI tools grounded in live infrastructure state
-- **Inner source at enterprise scale** — cross-agency template adoption via inner source patterns
-- **Unified on-prem + cloud pipeline** — most have separate on-prem and cloud processes
-- **Drift detection with automatic remediation** — most detect drift; few auto-remediate within policy
-- **Fully automated compliance evidence** — most still have manual evidence-gathering steps
-
-These are the areas where we innovate beyond the reference models.
+- The responsibility matrix.
+- The ADR process.
+- The compliance dashboard.
+- Joint ownership of the Approved MCP Registry.
 
 -----
 
-## 16. Copilot Enterprise Strategy (expanded)
+## 14. Glossary — Plain Language
 
-### 16.1 Enterprise-Level Settings
+Written for people who are new to this area. Not every concept, just the ones that come up most.
 
-- Content exclusions: credential files, CJIS-data paths, production connection strings. Owned by Enterprise Security. Immutable.
-- Audit logging: every Copilot interaction logged alongside GitHub events.
-- Model access: approved models list maintained at enterprise level.
+**ADR (Architecture Decision Record).** A short document recording one decision, the context, and the consequences. Numbered. Immutable once accepted. Superseded by another ADR if needed.
 
-### 16.2 Knowledge Bases
+**Attestation.** A signed statement about how an artifact was built. Lets consumers verify provenance.
 
-See §9.2. The state compliance knowledge base (§9.2) is particularly important — grounding Copilot answers in government requirements rather than generic NIST summaries.
+**BYOK (Bring Your Own Key).** Enterprise Copilot setting that lets an organization supply its own API keys to the underlying AI model providers, bringing AI billing and data flows inside existing vendor agreements.
 
-### 16.3 MCP Registry
+**CODE PA.** Commonwealth Office of Digital Experience, established 2023. Pennsylvania’s central team for citizen-facing digital services and the PA.gov platform.
 
-See §17. The MCP registry is a COE deliverable. Enterprise Security reviews each Tier 1 server. Servers with access to CJIS or restricted data require a formal security review before any tier assignment.
+**CODEOWNERS.** A file listing who must review changes to specific paths in a repo. Automatically requests their review on PRs.
+
+**Coding Agent.** Copilot feature where an issue is assigned to Copilot and it works autonomously in the background, opening a PR when done.
+
+**Copilot Space.** A curated container (code, docs, issues, custom instructions, etc.) that Copilot grounds answers in. Replaced the older “knowledge bases” feature on November 1, 2025.
+
+**CSF (NIST Cybersecurity Framework) 2.0.** The February 2024 revision of the NIST Cybersecurity Framework, which added the **Govern** function as a sixth core function alongside Identify, Protect, Detect, Respond, and Recover.
+
+**Custom properties.** Labels on repos or organizations that let rulesets and automation target groups without naming each one. Now generally available at both enterprise and organization levels.
+
+**DevSecOps.** Development + Security + Operations as one continuous practice. Security is built in, not bolted on.
+
+**EISO.** Enterprise Information Security Office. The Commonwealth’s central security governance body; home of the Commonwealth CISO.
+
+**EMU.** Enterprise Managed User. Our enterprise GitHub accounts are EMU accounts, not personal GitHub.
+
+**Executive Order 2016-06.** The Pennsylvania executive order that centralizes IT governance under OA/OIT and authorizes the ITP catalog.
+
+**Inner source.** Using open source practices (public visibility, PRs, CONTRIBUTING.md) *inside* an enterprise.
+
+**ITP.** Information Technology Policy. Numbered policies published by OA/OIT that agencies under the Governor’s jurisdiction must follow.
+
+**MCP (Model Context Protocol).** A standard that lets AI clients connect to external systems (GitHub, SQL, Azure). Think of it as “USB for AI tools.”
+
+**Mission Control.** The GitHub dashboard for steering multiple coding-agent tasks at once.
+
+**OA/OIT.** Office of Administration, Office of Information Technology. Publishes the ITP catalog and coordinates enterprise IT governance across agencies under the Governor’s jurisdiction.
+
+**OIDC (OpenID Connect).** An identity protocol. Relevant here because GitHub Actions can use OIDC to get short-lived cloud credentials instead of storing long-lived secrets.
+
+**Premium request.** Copilot’s unit of paid usage for Chat, agent mode, code review, and advanced model selection. Plan allocations govern consumption.
+
+**Reusable workflow.** A GitHub Actions workflow defined once in one repo, called by many other repos.
+
+**Ruleset.** A GitHub policy object that applies rules (branch protection, required checks, signed commits) to repos matching criteria. Replaces manual branch protection configuration. Generally available at enterprise and organization levels.
+
+**SBOM (Software Bill of Materials).** A list of all components in a build. Required for supply-chain security.
+
+**SLSA.** A framework for supply-chain security levels. Higher levels require stronger provenance guarantees.
+
+**SSDF.** NIST Secure Software Development Framework (SP 800-218). SP 800-218A is the companion profile for AI-related development.
+
+**Starter workflow.** A workflow template that appears in the Actions “new workflow” UI. Makes the right choice the default choice.
+
+**Template repo.** A repo marked as a template, so new repos can be created from it. Carries workflows, instruction files, and scaffolding forward.
+
+**Workspace (VS Code).** A `.code-workspace` file grouping folders (often repos) together. Multi-root workspaces let you work across several repos in one window.
+
+**Zero Trust.** An architectural principle: don’t grant trust by location or session. Verify identity, device, and authorization on every request.
 
 -----
 
-## 17. MCP at Enterprise Scale
+## 15. Getting Started — Small Steps for the COE
 
-### 17.1 Central Hosting Pattern
+A suggested sequence for the first several months. Each step is a meeting agenda item with an artifact.
 
-Remote MCP servers behind enterprise SSO/OIDC. Developers configure a URL; the server authorizes by identity. No personal credentials in config files.
+1. **Publish this strategy document** in the COE repo. Open it for comment. Record the first ADR: “ADR-0001: Adopt the Enterprise Multi-Org DevSecOps Strategy.”
+1. **Draft the responsibility matrix.** One page. Who sets, who enforces, who audits each class of policy. Signed off by EISO and us. Reference the ITP catalog where applicable.
+1. **Tag the top 50 repos with custom properties.** No rulesets yet. Just labeling. Require explicit-value selection for `data-classification` and `compliance-scope` on new repos.
+1. **Stand up one Copilot Space** (pick one: “Data Platform Standards” is a good first). Announce it. Convert any legacy knowledge-base content if present.
+1. **Publish the first repo template** (pick one: `tpl-powershell-module` or `tpl-sql-database-project`). Include instruction files, one reusable workflow, and a seeded `.vscode/mcp.json`.
+1. **Publish the Approved MCP Registry repo** with the first three entries (remote GitHub MCP, Filesystem MCP, Fetch MCP). Document the review process.
+1. **Turn on audit log streaming** to the enterprise SIEM. Include Copilot events. One-time change, high visibility value.
+1. **Pilot one required reusable workflow** (probably security scans) on five volunteer repos. Start in Evaluate mode. Measure, fix, expand, then flip to enforcing.
+1. **Record ADRs for every significant decision above.** The COE’s credibility comes from a trail of recorded reasoning.
+1. **Review at the monthly showcase.** Show what shipped. Invite adoption across agency orgs.
 
-### 17.2 Approved Registry
-
-|Server                |Tier                |Auth       |Data classification    |
-|----------------------|--------------------|-----------|-----------------------|
-|GitHub MCP            |1 — freely usable   |SSO session|Internal               |
-|Filesystem (scoped)   |1 — freely usable   |None       |Internal               |
-|Fetch / Web           |1 — freely usable   |None       |Public only            |
-|Terraform Registry MCP|1 — freely usable   |None       |Public                 |
-|Ansible Galaxy MCP    |1 — freely usable   |None       |Public                 |
-|SQL Dev MCP           |2 — request needed  |SSO+OIDC   |Confidential (dev only)|
-|Azure MCP             |2 — request needed  |SSO+OIDC   |Confidential (sandbox) |
-|AWS MCP               |2 — request needed  |SSO+OIDC   |Confidential (sandbox) |
-|VMware Aria MCP       |2 — request needed  |SSO+OIDC   |Confidential (dev only)|
-|CMDB MCP              |2 — request needed  |SSO        |Internal               |
-|Kusto / ADX MCP       |2 — request needed  |SSO+OIDC   |Confidential           |
-|ServiceNow MCP        |2 — request needed  |SSO+OIDC   |Confidential           |
-|CJIS-data systems     |3 — prohibited      |—          |Restricted             |
-|Production databases  |3 — prohibited local|—          |Restricted             |
+After these ten steps, we have foundations. Then Stage 2 and beyond (section 6.3) become tractable.
 
 -----
 
-## 18. Glossary
+## 16. What This Document Isn’t
 
-Every term is also defined inline the first time it appears in a section. This glossary is for quick reference.
+It’s not a final plan. It will be wrong in places. It doesn’t cover every tool, every archetype, or every scenario. Agency orgs will have needs we haven’t anticipated. EISO will have priorities that reorder ours. The Copilot and MCP ecosystems continue to change on a roughly quarterly cadence, and some specific tool details here will age out before the principles do.
 
-**ADR (Architecture Decision Record).** A document recording one decision, its context, and its consequences. Numbered. Immutable once accepted.
-
-**Ansible.** An agentless open-source configuration management and deployment tool. Uses YAML playbooks. Connects via SSH or WinRM. No agent needed on target nodes.
-
-**Aria Automation.** VMware Broadcom’s self-service infrastructure portal (formerly vRealize Automation / vRA). Manages blueprints for on-premises VM provisioning.
-
-**Attestation.** A signed, verifiable record of how a software artifact was built.
-
-**BCP (Bulk Copy Program).** A SQL Server command-line utility for high-speed bulk data import/export.
-
-**Bicep.** Microsoft’s language for defining Azure infrastructure as code.
-
-**CJIS (Criminal Justice Information Services).** FBI division setting security policy for systems handling criminal justice data.
-
-**CUI (Controlled Unclassified Information).** Federal information that requires safeguarding per law or policy but is not classified.
-
-**cfn-guard.** AWS’s open-source policy-as-code tool for CloudFormation templates. Enforces organizational rules at deployment time.
-
-**CloudFormation.** AWS’s native IaC service. Defines AWS resources in JSON or YAML templates.
-
-**CodeQL.** GitHub’s semantic code analysis engine. Finds security vulnerabilities by analyzing code flow. Supports C#, Java, JavaScript, Python, Go, Ruby, Swift. Does NOT support PowerShell, T-SQL, Terraform, Bicep, Ansible, or Salt — and therefore has limited applicability in this environment. Use only on Enterprise Development repos with supported languages.
-
-**GHAS (GitHub Advanced Security).** A set of GitHub security features including Secret Scanning, Push Protection, Code Scanning (SARIF-based), and Dependabot. Licensed at the enterprise level. Secret Scanning and Push Protection are the highest-priority features for this environment.
-
-**CODEOWNERS.** A file listing who reviews changes to specific paths in a repo.
-
-**COE (Center of Excellence).** A cross-org body producing shared standards, patterns, and tools. Artifact-producing, not just advisory.
-
-**Copilot Enterprise.** GitHub’s highest-tier AI coding assistant.
-
-**Drift.** When the actual deployed state of infrastructure differs from what the IaC template defines.
-
-**EMU (Enterprise Managed Users).** GitHub enterprise configuration where all accounts are managed by the organization.
-
-**FedRAMP.** Federal Risk and Authorization Management Program. Cloud service authorization standard for federal agencies.
-
-**GCM (Git Credential Manager).** Secure storage for Git authentication tokens.
-
-**GHAS (GitHub Advanced Security).** GitHub’s security feature set including Secret Scanning, Push Protection, Code Scanning (SARIF-based), and Dependabot. Secret Scanning and Push Protection are the highest-priority features for this environment.
-
-**Gitleaks.** Open-source secret scanner. Scans any file type for credential patterns including custom patterns specific to your organization. Runs in CI/CD. Outputs SARIF so findings appear in the GitHub Security tab.
-
-**PSScriptAnalyzer.** Microsoft’s PowerShell static analysis tool. Finds security anti-patterns, credential misuse, deprecated cmdlets, and quality violations in PowerShell files. The correct code analysis tool for PowerShell repos — not CodeQL.
-
-**Push Protection.** A GitHub GHAS feature that blocks a commit before it reaches the repo if it contains a recognized secret pattern. The most effective preventive control for credential leakage. Should be enabled enterprise-wide before any other scanning tool.
-
-**SARIF (Static Analysis Results Interchange Format).** A standard format for security tool output. Any tool that outputs SARIF can upload findings to the GitHub Security tab. This is how Semgrep, PSScriptAnalyzer, Gitleaks, Checkov, and other tools produce a unified security view in GitHub.
-
-**Semgrep.** Open-source and commercial rule-based code scanner. Supports PowerShell, SQL, Terraform, Ansible, YAML, and many other languages. Allows custom rules for organization-specific patterns. Outputs SARIF. Fills the gap CodeQL leaves for PowerShell, SQL, and IaC.
-
-**TruffleHog.** Open-source secret scanner specializing in Git history — finds secrets that were committed and then deleted. They still exist in history. Useful for auditing repos that predate push protection.
-
-**gMSA (Group Managed Service Account).** A Windows Active Directory account type for services, with automatically rotated passwords.
-
-**IaC (Infrastructure as Code).** Defining infrastructure in configuration files instead of manual clicks.
-
-**IAM (Identity and Access Management).** Managing who can access what — authentication and authorization systems.
-
-**Inner source.** Open-source practices applied to internal enterprise repos.
-
-**KICS (Keeping Infrastructure as Code Secure).** An open-source IaC security scanner by Checkmarx.
-
-**MCP (Model Context Protocol).** Standard that lets AI tools connect to external systems.
-
-**NSG (Network Security Group).** Azure firewall rule set attached to a subnet or network interface.
-
-**OPA (Open Policy Agent).** Policy-as-code engine. Write policies in Rego; OPA returns allow/deny.
-
-**ORI.** Originating Agency Identifier. An FBI-assigned identifier for CJIS-authorized agencies.
-
-**OIDC (OpenID Connect).** Identity protocol enabling short-lived cloud credentials from GitHub Actions.
-
-**PR (Pull Request).** A proposal to merge code changes, reviewed before merging.
-
-**RACI.** Responsible, Accountable, Consulted, Informed.
-
-**RPO/RTO (Recovery Point/Time Objectives).** RPO = how much data loss is acceptable. RTO = how long a system can be down.
-
-**Ruleset.** A GitHub policy object applying rules to repos matching criteria.
-
-**Salt / SaltStack.** Agent-based configuration management and remote execution tool. Strong on-prem presence.
-
-**SBOM (Software Bill of Materials).** Complete inventory of all components in a build.
-
-**SCIM.** System for Cross-domain Identity Management. Automates user account provisioning.
-
-**SIEM.** Security Information and Event Management. Collects and correlates security events.
-
-**SLSA.** Supply-chain Levels for Software Artifacts. Build provenance verification framework.
-
-**SoD (Separation of Duties).** Builder ≠ auditor. A security control preventing unchecked power.
-
-**SSDF.** Secure Software Development Framework. NIST SP 800-218.
-
-**SSO (Single Sign-On).** One set of credentials grants access to multiple systems.
-
-**T-SQL (Transact-SQL).** Microsoft’s SQL Server dialect.
-
-**Terraform.** Open-source multi-cloud IaC tool by HashiCorp.
-
-**tflint.** Terraform linter. Catches provider-specific issues and style violations.
-
-**Trivy.** Open-source scanner for container images, file systems, and IaC.
-
-**VMware / Broadcom.** VMware (now owned by Broadcom) produces the enterprise hypervisor and on-premises cloud stack we use for on-premises infrastructure.
-
-**Zero Trust.** Architectural principle: never assume trust by location. Verify every identity, device, and request.
+The goal is to have enough shared vocabulary and enough published artifacts that every conversation starts from the same baseline — and enough humility to keep updating the baseline as we learn.
 
 -----
 
-## 19. Getting Started — COE Roadmap
-
-```
-Month 1: Foundation documents
-  ☐ Publish this strategy in the COE repo
-     → ADR-0001: Adopt Multi-Org DevSecOps Strategy
-  ☐ Draft responsibility matrix
-     → ADR-0002: Responsibility Allocation v1
-  ☐ Tag top 50 repos with custom properties
-  ☐ Establish team structure in GitHub (§5)
-     → ADR-0003: ETS GitHub Teams and Permissions Model
-
-Month 2: First artifacts
-  ☐ Stand up first Copilot knowledge base (Data Platform Standards)
-  ☐ Publish first repo template (tpl-powershell-module or tpl-sql-database-project)
-  ☐ Publish MCP registry with Tier 1 entries
-  ☐ Establish self-hosted runner pool for on-prem workloads
-
-Month 3: Security foundations
-  ☐ Turn on audit log streaming → SIEM
-     → ADR-0004: Audit Log Streaming
-  ☐ Pilot security scan workflow on 5 volunteer repos (evaluate mode)
-  ☐ Define tag validation workflow and publish it
-  ☐ Begin branch protection standardization on all ETS repos
-
-Month 4: Pipeline standardization
-  ☐ Publish on-prem IaC pipeline (Terraform + Ansible + Salt)
-  ☐ Publish Azure deployment pipeline (Bicep / Terraform)
-  ☐ Publish AWS deployment pipeline (Terraform / CloudFormation)
-  ☐ Begin template library (first 2 archetypes)
-
-Month 5-6: Agency enablement
-  ☐ Launch agency self-service sandbox environment
-  ☐ Publish agency deployment process documentation
-  ☐ Implement template guardrail enforcement in pipelines
-  ☐ Tag validation goes live (evaluate mode first)
-  ☐ First monthly showcase — invite agency teams
-
-Ongoing: Measure, expand, iterate
-  ☐ COE weekly working session: move backlog
-  ☐ Biweekly review: what shipped, what's next
-  ☐ Monthly showcase: build adoption
-  ☐ Quarterly: audit org-owner access, review responsibility matrix
-```
-
------
-
-## 20. What This Document Is Not
-
-Not a final plan. Not a mandate. Not a complete reference for every tool or scenario. Customer orgs will have needs we have not anticipated. Enterprise Security will have priorities that reorder ours.
-
-The goal is enough shared vocabulary, enough published artifacts, and enough structured processes that every conversation starts from the same baseline — and enough humility to keep updating that baseline as we learn.
-
------
-
-*Maintained by the DevSecOps COE. Contributions via PR welcome. Major changes require an ADR. Minor corrections (typos, glossary additions, clarifications) can be submitted as PRs without an ADR. Version history is in the Git log.*
+*This document is maintained by the DevSecOps COE. Contributions via PR welcome. Major changes require an ADR.*
